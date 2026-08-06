@@ -1,31 +1,21 @@
-// Firebase web app configuration.
+// Firebase web app configuration for project mobileapp-3dcda.
+// Source: Firebase console -> Project settings -> Your apps -> SDK setup and
+// configuration -> Config. See setup/FIREBASE-SETUP.md §4.
 //
-// >>> THESE ARE PLACEHOLDERS. The app will not connect until they are replaced. <<<
+// This is safe to commit, and in fact has to be: a Firebase web config ships to
+// every browser that loads the app, so it cannot be hidden. It is an identifier,
+// not a credential. Access control comes from firestore.rules and storage.rules.
 //
-// Per docs/02-architecture.md §Firebase wiring item 1, placeholder text here is a
-// deliberate stop signal: do not guess these values, and do not proceed with the
-// build until real ones are in place.
+// Worth doing when convenient: add an HTTP-referrer restriction to this key in
+// Google Cloud -> APIs & Services -> Credentials, limited to the GitHub Pages host
+// and localhost. That is what actually narrows where the key can be used, and it
+// matters here because this key is also present in this public repo's git history.
 //
-// Where to get them:
-//   Firebase console -> gear icon -> Project settings -> Your apps -> (your web app)
-//   -> SDK setup and configuration -> Config
-// Copy the values from that object into the fields below. See setup/FIREBASE-SETUP.md §4.
-//
-// On committing this: a Firebase web config is NOT a secret. It is shipped to every
-// browser that loads the app, so it cannot be hidden and there is no point trying.
-// Access control comes from firestore.rules and storage.rules, plus an HTTP-referrer
-// restriction on the API key in Google Cloud -> APIs & Services -> Credentials.
-// Restrict the key to your GitHub Pages host; that is what actually limits its use.
-//
-// `databaseURL` is intentionally absent. The console emits it by default, but nothing
-// in this project uses Realtime Database — all structured data is in Firestore.
+// `databaseURL` is intentionally absent. The console emits it by default because the
+// project has a Realtime Database instance, but nothing in this project uses RTDB —
+// all structured data is in Firestore per docs/02-architecture.md.
 export const firebaseConfig = {
-  // The only value that was removed. Paste the apiKey from the console here —
-  // ideally a freshly created, referrer-restricted one, since the previous key is
-  // still retrievable from this repo's public git history.
-  apiKey: "REPLACE_WITH_YOUR_API_KEY",
-
-  // These are plain identifiers, not credentials, and are correct for this project.
+  apiKey: "AIzaSyD0osqjUmINjUIjz6x7m8HkJpAvwbGvS8E",
   authDomain: "mobileapp-3dcda.firebaseapp.com",
   projectId: "mobileapp-3dcda",
   storageBucket: "mobileapp-3dcda.firebasestorage.app",
