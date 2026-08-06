@@ -11,14 +11,7 @@ name: Deploy Firebase rules
 
 on:
   push:
-    # `main` is the intended long-term deploy source.
-    #
-    # The feature branch is listed temporarily so the rules can reach the live
-    # project before the branch is merged — the database is currently in
-    # production mode with everything denied, so nothing works until they land.
-    # Remove the second entry once this branch is merged, so `main` is the only
-    # thing that can publish rules.
-    branches: [main, claude/firebase-rules-setup-w4m13m]
+    branches: [main]
     paths:
       - "firestore.rules"
       - "storage.rules"
@@ -30,10 +23,12 @@ on:
       - ".github/workflows/deploy-firebase-rules.yml"
   workflow_dispatch:
 
-# Never run two rules deploys at once; a later push should win.
+# Never run two rules deploys at once, and let a later push supersede an earlier
+# one. cancel-in-progress must stay true: with it false, a run stuck waiting for a
+# runner blocks every subsequent deploy behind it indefinitely.
 concurrency:
   group: firebase-rules
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   # Never publish rules that fail their own unit tests. The emulator needs no
