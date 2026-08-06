@@ -31,6 +31,18 @@
   --color-danger: #a81e16;
   --color-danger-tint: #fbe6e4;
 
+  /* ---- Rewards tiers -------------------------------------------------------
+     Bronze and Silver need their own tokens because brand yellow can only
+     legally be Gold's background (never its text/icon colour) — reusing a
+     status colour (warning/danger) for a tier would borrow that colour's
+     alarm meaning, which is not what a tier chip means. Contrast checked the
+     same way as the status tokens above: both clear 4.5:1 against white,
+     their own tint, and the app background. */
+  --color-tier-bronze: #8a5a2e;
+  --color-tier-bronze-tint: #f3e8dc;
+  --color-tier-silver: #5b6670;
+  --color-tier-silver-tint: #edeff0;
+
   /* ---- Surfaces ---------------------------------------------------------- */
   --color-surface: #ffffff;
   --color-surface-sunken: #ece7e2;

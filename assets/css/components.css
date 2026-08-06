@@ -400,6 +400,22 @@ a {
   background: var(--color-brand-yellow);
   color: var(--color-text-primary);
 }
+/* Rewards tier chips — three distinct looks, not the same gold pill wearing
+   different text. Gold is the one tier allowed to touch brand yellow, and
+   even then only as a tint under --color-text-primary, never as the chip's
+   own text/icon colour (tokens.css). */
+.pill--tier-bronze {
+  background: var(--color-tier-bronze-tint);
+  color: var(--color-tier-bronze);
+}
+.pill--tier-silver {
+  background: var(--color-tier-silver-tint);
+  color: var(--color-tier-silver);
+}
+.pill--tier-gold {
+  background: var(--color-brand-yellow-tint);
+  color: var(--color-text-primary);
+}
 
 /* ======================================================= data row ========= */
 

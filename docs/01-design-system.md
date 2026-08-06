@@ -49,7 +49,7 @@ that passes there passes on white too.
 | Token | Value | Contrast on bg | Usage |
 |---|---|---|---|
 | `--color-brand-yellow` | `#EDC319` | **1.48 — never text** | The mark, accent bars, streak and progress rings, points/rewards emphasis, filled panels. Only ever a background, and only ever under `--color-text-primary` (10.6:1). |
-| `--color-brand-yellow-tint` | `#FDF6DC` | — | Soft yellow surface for reward and milestone cards. |
+| `--color-brand-yellow-tint` | `#FDF6DC` | — | Soft yellow surface for reward and milestone cards, and the Gold rewards tier chip (paired with `--color-text-primary`, never `--color-brand-yellow` itself, as chip text). |
 | `--color-brand-teal` | `#15A5BB` | 2.58 — **decorative only** | Wellabe's bright teal. Fails the 3:1 floor for UI components, so it is a large-fill and illustration-tint color, never a control, a border, or text. |
 | `--color-primary` | `#076874` | **5.67** | Deep teal derived from the brand teal. Every primary button, link, active state, and focus ring. White on it measures 6.48:1. |
 | `--color-primary-pressed` | `#04525C` | — | Pressed/active state for primary controls. |
@@ -57,6 +57,10 @@ that passes there passes on white too.
 | `--color-success` | `#0F7A4A` | 4.71 | Active, paid, approved, completed. |
 | `--color-warning` | `#A34A06` | 5.19 | Due soon, past due, pending, needs attention. |
 | `--color-danger` | `#A81E16` | 6.42 | Lapsed, denied, failed. |
+| `--color-tier-bronze` | `#8A5A2E` | 5.13 | Bronze rewards tier — text/icon only, on `--color-tier-bronze-tint`. |
+| `--color-tier-bronze-tint` | `#F3E8DC` | — | Bronze tier chip background. |
+| `--color-tier-silver` | `#5B6670` | 5.13 | Silver rewards tier — text/icon only, on `--color-tier-silver-tint`. |
+| `--color-tier-silver-tint` | `#EDEFF0` | — | Silver tier chip background. |
 | `--color-surface` | `#FFFFFF` | — | Card backgrounds. |
 | `--color-background` | `#F3EFEC` | — | App background. Wellabe's warm off-white, not a neutral gray. |
 | `--color-text-primary` | `#14181B` | 15.62 | Body text and headings. |

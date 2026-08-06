@@ -73,7 +73,13 @@
 .admin-tab[aria-current='page'] {
   color: var(--color-text-on-dark);
   font-weight: var(--weight-bold);
-  border-bottom-color: var(--color-brand-yellow);
+  /* Brand yellow is a background colour only (docs/01) — a border is a status
+     indicator, which is exactly the role yellow isn't allowed to play,
+     regardless of how well it happens to contrast on this dark chrome.
+     Reusing the same white the active tab's text already carries keeps one
+     consistent "this tab is active" signal instead of introducing a second,
+     reserved colour for it. */
+  border-bottom-color: var(--color-text-on-dark);
 }
 
 .admin-main {

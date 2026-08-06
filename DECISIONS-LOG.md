@@ -432,13 +432,28 @@ with a long tail of notable and minor items. This section is the handoff.
   (2-months-behind) `paidThroughDate`. Fixed by skipping any generated payment whose
   resulting date would exceed the policy's stored `paidThroughDate` — a one-line guard, no
   schema change.
+- **Brand yellow was doing status work in two places the design system genuinely forbids.**
+  The finding named five things; three turned out to already be the sanctioned use docs/01
+  explicitly calls out ("streak and progress rings, points/rewards emphasis") and were left
+  alone: the streak ring, the rewards-store points chips, and achievement badge borders (all
+  reward/milestone emphasis, all yellow-as-background-only, none of them a state indicator).
+  Two were real violations and got fixed:
+  - **The rewards tier chip rendered Bronze, Silver, and Gold identically** — same yellow
+    pill, different text only. Fixed with two new tokens, `--color-tier-bronze`/`-tint` and
+    `--color-tier-silver`/`-tint` (contrast-checked the same way as the status tokens, both
+    clear 4.5:1), plus three `.pill--tier-*` variants. Gold keeps `--color-brand-yellow-tint`
+    under `--color-text-primary` — the one combination yellow is actually allowed in — rather
+    than introducing a third new token for a color that already has a compliant home.
+  - **The admin console's active-tab underline used brand yellow as a border**, which
+    tokens.css reserves as background-only regardless of contrast. (It measures a strong
+    10.56:1 against the admin's dark chrome, so this wasn't a legibility problem — it was a
+    role violation: a border is a status indicator, which is exactly the role that token
+    isn't allowed to play.) Switched to `--color-text-on-dark` — the same white the active
+    tab's text already turns — so the active state now carries one consistent signal instead
+    of introducing a second, reserved color for it.
 
-**Still open — worth doing before the demo:**
-
-1. **Brand yellow is doing status work**, which the design system forbids: the rewards tier
-   chip, the points chips, the streak ring, badge borders, and the admin console's active-tab
-   underline. The rewards tier chip is the worst of these — Bronze, Silver and Gold all
-   render as the same gold pill.
+**Still open — worth doing before the demo:** none from this pass. See the notable tail
+below.
 
 The notable tail, roughly in order of value: Todd's unlocked-offer card is styled the same as
 the routine challenges card directly above it, so the demo's hero moment reads as wallpaper;

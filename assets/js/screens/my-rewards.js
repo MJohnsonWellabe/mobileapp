@@ -171,6 +171,13 @@ page({
   },
 });
 
+/** Bronze/Silver/Gold each get their own look — see docs/01 and DECISIONS-LOG.md
+ *  for why they can't all just be the yellow pill with different text. */
+function tierPillClass(tier) {
+  return { Bronze: 'pill--tier-bronze', Silver: 'pill--tier-silver', Gold: 'pill--tier-gold' }[tier] ??
+    'pill--tier-bronze';
+}
+
 function balanceCard(account) {
   const lifetime = account.lifetimePointsEarned ?? 0;
   const next = lifetime >= TIER_THRESHOLDS.Gold ? null : lifetime >= TIER_THRESHOLDS.Silver ? 'Gold' : 'Silver';
@@ -183,7 +190,7 @@ function balanceCard(account) {
       <span class="balance__unit">points to spend</span>
     </div>
     <div class="tier">
-      <span class="pill pill--accent">${icons.starFilled()}${esc(account.tier ?? 'Bronze')}</span>
+      <span class="pill ${tierPillClass(account.tier)}">${icons.starFilled()}${esc(account.tier ?? 'Bronze')}</span>
       ${next
         ? html`<span class="card__meta">${formatPoints(toGo)} more earned to reach ${next}</span>`
         : html`<span class="card__meta">You're at the top tier.</span>`}
