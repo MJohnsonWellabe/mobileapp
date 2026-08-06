@@ -316,6 +316,30 @@ every routine implementation choice already specified in the docs. The pre-build
 "Feature-level judgment calls" section above covers the rules/schema decisions made before
 any app code existed.)*
 
+- **Firebase SDK vendored into the repo instead of loaded from the gstatic CDN.**
+  `docs/02` preferred CDN imports. Three things outweighed that: the demo no longer depends
+  on a third party at runtime, version drift across three separate pinned URLs becomes
+  impossible, and — decisively — the build environment cannot reach gstatic at all, so with
+  CDN imports the app could not be rendered or screenshotted locally and the entire visual
+  QA loop would have been reviewing something other than what ships. One bundle, not three:
+  Firestore and Storage both look up the initialized app in a registry inside
+  `@firebase/app`, and bundling them separately would give each its own copy of it. Not a
+  build step in the sense `docs/02` warns about — Pages still serves committed static files
+  and nothing builds in CI. Regenerate with `npm run vendor:firebase`. Logged in
+  `setup/GITHUB-SETUP.md` too, since that doc asked to be told.
+- **`persistentLocalCache` enabled.** A fully client-side app demoed over conference-room
+  Wi-Fi should re-render cached data on a dropped connection rather than an empty screen.
+  Single-tab manager, because nothing here coordinates across tabs and the multi-tab manager
+  costs a leader election on every load. Disabled under the emulator, where it mostly
+  produces confusing stale reads after a data reset.
+- **Two seed transports, one set of seed data.** The browser cannot reach Firestore from
+  the build container — Chromium gets `ERR_CONNECTION_RESET` with or without the egress
+  proxy, while Node and curl both get `200`. Rather than give up on verifying the real seed,
+  the seed *content* lives in one framework-free module and two thin transports consume it:
+  `assets/js/seed.js` (browser, Firebase SDK, the documented artifact the human runs) and
+  `scripts/seed-node.mjs` (Node, Firestore REST through an undici `ProxyAgent`, what the
+  build uses to seed and verify). Same documents either way; no duplicated content.
+
 ## Visual QA patterns
 
 *(Recurring issues the `visual-qa-reviewer` subagent flagged more than once, and the fix

@@ -78,3 +78,27 @@ Pages settings has a "GitHub Actions" source option for exactly this) or have Cl
 commit the built output directly. Don't let this happen silently — if you notice a
 `package.json` with a `build` script that the currently-configured Pages source doesn't
 run, that's the signal something changed and Pages config needs to change with it.
+
+### One thing did change: the Firebase SDK is vendored
+
+**Nothing is required of you, and your Pages configuration does not change.** Recording it
+here because this is the section that exists for exactly this.
+
+`docs/02` originally had the app import the Firebase SDK from Google's `gstatic` CDN at
+runtime. It now imports from `assets/vendor/firebase.js`, a committed file in this repo.
+Three reasons:
+
+1. **The demo stops depending on a third party at runtime.** Everything the app needs now
+   comes from the same origin as the app. A slow, blocked, or rate-limited CDN can no longer
+   take the app down mid-presentation.
+2. **What gets tested is what ships.** The build environment cannot reach `gstatic` at all,
+   so with CDN imports the app could not be rendered or screenshotted locally — the visual
+   QA process in `docs/07` would have been reviewing something other than the real thing.
+3. **Version drift becomes impossible.** The SDK version was previously repeated in three
+   separate CDN URLs that had to stay identical.
+
+The file is regenerated with `npm run vendor:firebase` (see `scripts/vendor-firebase.mjs`),
+which you'd only run to move to a newer Firebase version. **This is not a build step in the
+sense above:** GitHub Pages still serves committed static files, nothing builds in CI, and
+`package.json` still has no `build` script. Your Pages source stays "Deploy from a branch →
+`main` → `/ (root)`."

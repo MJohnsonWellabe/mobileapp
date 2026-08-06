@@ -6,13 +6,15 @@
   "scripts": {
     "test:rules": "firebase emulators:exec --only firestore --project wellabe-rules-test \"node --test tests/rules/firestore.rules.test.mjs\"",
     "test:storage-rules": "firebase emulators:exec --only storage --project wellabe-storage-rules-test \"node --test tests/rules/storage.rules.test.mjs\"",
-    "test": "npm run test:rules && npm run test:storage-rules"
+    "test": "npm run test:rules && npm run test:storage-rules",
+    "vendor:firebase": "node scripts/vendor-firebase.mjs"
   },
   "devDependencies": {
     "@firebase/rules-unit-testing": "^5.0.0",
     "esbuild": "^0.28.1",
     "firebase": "^12.17.1",
     "firebase-tools": "^15.0.0",
-    "playwright": "^1.62.1"
+    "playwright": "^1.62.1",
+    "undici": "^8.10.0"
   }
 }
