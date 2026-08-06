@@ -643,5 +643,65 @@ real and worth the next iteration's attention — see the closing summary below.
 
 ## Closing summary
 
-*(Filled in at the end of Phase 4: what's solid, what's intentionally thin and why, and
-what to tackle first in the next iteration.)*
+**What's solid.** All nine Phase 2 build items exist and work end to end against real
+Firestore data: Auth, MyInformation, MyCoverages, MyPayments, MyClaims, MyMailbox,
+MyRewards, MyHealth, MyCare, and the admin console, seeded for all 8 members plus admin.
+The guardrails CLAUDE.md calls out by name all hold and are rules-enforced, not just
+UI-enforced: gender/DOB require the documentation-request flow, a card mismatch in
+MyPayments writes a `failed` payment and never a `resultingPaidThroughDate`, a rewards
+redemption can never take the balance negative, and a claim can never skip or reverse a
+stage. April's flagship end-to-end scenario — lapsed policy, wrong-then-right card digits,
+reinstatement, and the same "Active" reading on MyCoverages, Home, *and* the admin
+console with no manual edit in between — is verified working, not just asserted. The claim
+tracker (Intake→Processing→Reviewing→Paid, plus the distinct Denied end state with a
+plain-language reason and a working "Request a review") is genuinely well built. The 373→371
+document seed matches `docs/03`'s per-member table exactly, verified against the real
+project directly via the admin-authenticated seed path built this session, not just the
+emulator.
+
+**What's intentionally thin, and why.** A handful of real, verified findings were
+deliberately left for the next pass rather than patched hastily in this one, because each
+needs a design decision, not just a code fix:
+- **The MyHealth streak ring's fill doesn't mean what it looks like it means.** It renders
+  fully closed ("goal complete") whenever the current streak equals the personal-best
+  longest streak — which is the common case for anyone actively building a streak, not an
+  edge case. Fixing this well needs deciding what the ring *should* encode (progress toward
+  a fixed goal? days until the next badge? something else), not a one-line tweak.
+- **The claim card's visual hierarchy is upside down.** The internal claim number
+  (`CLM-2026-00418`) is the boldest text on the card; the plain-language outcome and, for a
+  denied claim, the reason itself are smaller or absent from the card entirely (even though
+  MyMailbox now surfaces the same denial in full). Worth a real redesign pass of that card,
+  not a font-weight swap.
+- **Two members refer to the same coverage state with two different words.** Home's
+  MyPayments row says "past due"; MyCoverages, MyPayments' own detail view, and MyMailbox
+  all say "Lapsed" for the identical policy. These aren't synonyms to a member — pick one
+  and derive every surface from it, the same way `coverageStatus()` already unifies the
+  status *pill* everywhere.
+- **The unread "New" pill and the danger pills share the same red**, so an unread-but-good
+  notice (a claim advancing to Reviewing) reads with the same visual alarm as a denial or a
+  lapse. Needs a second color in the palette for "unread," not reserved for "wrong."
+- **The disabled reward-tile ("790 more points needed") is styled like a live secondary
+  button** at contrast that reads as marginal — a member will tap it expecting something to
+  happen. Should be a plain status line, not button chrome.
+
+None of these were guessed at or left out of laziness — each was found by the
+`visual-qa-reviewer` subagent looking at real screenshots, confirmed by inspecting the
+actual rendered output, and scoped out deliberately because a rushed fix risked being wrong
+in a way that's worse than the current honest gap.
+
+**What I'd tackle first in the next iteration**, in order: (1) the two-words-for-one-state
+wording drift, because it's the cheapest of the five and touches member trust directly;
+(2) the claim card hierarchy redesign, because Debbie's denial is the single most
+emotionally loaded screen in the app and it currently under-serves the information that
+matters most; (3) the streak ring, because it's this app's one genuinely novel engagement
+mechanic and right now it lies to the member on the most common path through it; (4) the
+unread-pill color and the disabled-tile contrast, both quick once a moment is taken to pick
+the right token; (5) a fresh `design-researcher` gap-fill pass, since the last one predates
+MyMailbox's own build-out and eight more member states' worth of real content now exists to
+critique against.
+
+**One thing to hand back to the human immediately:** the `claude-code-firestore-admin`
+service-account key (Part 1 of this session) has done its job — the real project is
+seeded and verified end-to-end via `--admin --verify`. Safe to revoke it from the GCP
+console now (Keys tab → trash icon); regenerating a fresh one costs nothing next time it's
+needed.
