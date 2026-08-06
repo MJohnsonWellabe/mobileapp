@@ -28,7 +28,7 @@ import {
 import { html, esc, mount, on, sectionCard, skeletonList, toast, preloadIllustrations, illustration } from '../ui.js';
 import { icons } from '../icons.js';
 import { attentionItems } from '../notices.js';
-import { toggleChallenge, DAILY_CHALLENGES } from '../features/health.js';
+import { toggleChallenge, challengeForDate } from '../features/health.js';
 
 const session = requireMember();
 if (session) start(session);
@@ -110,7 +110,7 @@ function render(state) {
       <p class="home-sub">${esc(coverageLine(policies, today))}</p>
     </div>
 
-    ${attention.length ? attentionCard(attention) : ''} ${todayCard(stats, todayLog)}
+    ${attention.length ? attentionCard(attention) : ''} ${todayCard(stats, todayLog, today)}
 
     <div>
       <h2 class="section-heading">Your Wellabe</h2>
@@ -194,9 +194,11 @@ function attentionCard(items) {
   </div>`;
 }
 
-function todayCard(stats, todayLog) {
-  const done = todayLog.length;
-  const pct = Math.min(1, done / 5);
+function todayCard(stats, todayLog, today) {
+  // One assigned challenge per day, not a checklist of all five — see
+  // DECISIONS-LOG.md. `done` is 0 or 1.
+  const challenge = challengeForDate(today);
+  const done = todayLog.includes(challenge.id) ? 1 : 0;
   const circumference = 2 * Math.PI * 30;
 
   return html`<div class="today-card">
@@ -209,7 +211,7 @@ function todayCard(stats, todayLog) {
             cx="36"
             cy="36"
             r="30"
-            stroke-dasharray="${(pct * circumference).toFixed(1)} ${circumference.toFixed(1)}"
+            stroke-dasharray="${(done * circumference).toFixed(1)} ${circumference.toFixed(1)}"
           />
         </svg>
         <span class="ring__label">
@@ -218,27 +220,24 @@ function todayCard(stats, todayLog) {
         </span>
       </div>
       <div class="today-card__copy">
-        <div class="today-card__title">Today</div>
+        <div class="today-card__title">Today's challenge</div>
         <div class="today-card__meta">
-          ${done} of 5 complete.
-          ${done >= 1 ? 'Today counts toward your streak.' : 'Complete any one to count today.'}
+          ${done ? 'Complete. Today counts toward your streak.' : 'Complete it to count today.'}
         </div>
       </div>
     </div>
     <ul class="challenge-list">
-      ${DAILY_CHALLENGES.map(
-        (c) => html`<li>
-          <button
-            class="challenge"
-            type="button"
-            data-challenge="${c.id}"
-            aria-pressed="${todayLog.includes(c.id)}"
-          >
-            <span class="challenge__box" aria-hidden="true">${icons.check()}</span>
-            <span class="challenge__label">${esc(c.label)}</span>
-          </button>
-        </li>`,
-      )}
+      <li>
+        <button
+          class="challenge"
+          type="button"
+          data-challenge="${challenge.id}"
+          aria-pressed="${done === 1}"
+        >
+          <span class="challenge__box" aria-hidden="true">${icons.check()}</span>
+          <span class="challenge__label">${esc(challenge.label)}</span>
+        </button>
+      </li>
     </ul>
   </div>`;
 }

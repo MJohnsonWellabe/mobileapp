@@ -108,10 +108,18 @@ or similar is sufficient, per `healthProfiles.connectedTracker`).
 
 **Daily challenges:** the 5 fixed challenge types from `docs/03-data-model-and-seed-data.md`
 (5,000 steps · burn 400 calories · 10 flights of stairs · 10 minutes of activity · one
-breathing/meditation session), shown as a checklist for "today," each completable with a
-simple tap (no real sensor data — this is a prototype, marking a challenge complete is a
-believable simulation, not a real measurement). Completing challenges contributes to that
-day's streak credit.
+breathing/meditation session), with exactly **one assigned per calendar day** — not a
+checklist of all five to choose from. The assignment rotates deterministically by date
+(`challengeForDate()` in `format.js`), so every member sees the same single challenge on
+the same day, and it never needs storing: a reload or a re-seed can never disagree with
+what was shown earlier. Completable with a simple tap (no real sensor data — this is a
+prototype, marking a challenge complete is a believable simulation, not a real
+measurement). Completing that day's challenge credits the day.
+
+An earlier draft of this section showed all five as a checklist and credited the day at
+one of five completed; that was changed on the product owner's call to one assigned
+challenge per day, and is recorded in `DECISIONS-LOG.md`. The credited-day threshold below
+is otherwise unchanged: completing the one available challenge is what credits the day.
 
 **Streak:** a prominent current-streak display (ring or counter, per
 `docs/01-design-system.md`), plus longest streak and earned badges. **Handle a broken
@@ -166,9 +174,8 @@ same `rewardsAccounts`/`rewardsTransactions` system used by MyRewards — these 
 share one points ledger, they are not separate currencies.
 
 **Acceptance criteria**
-- [ ] Completing the first of today's challenges increments the streak by exactly 1 and
-  the day reads as counting. Completing the 2nd through 5th shows day progress
-  ("3 of 5 today") and credits points, but does not increment the streak again.
+- [ ] Completing today's one assigned challenge increments the streak by exactly 1 and the
+  day reads as counting. There is no second challenge available that day to complete.
 - [ ] Un-completing and re-completing the same challenge on the same day produces exactly
   one `rewardsTransactions` document for it. Verify by counting documents, not by checking
   the balance.
@@ -184,14 +191,14 @@ share one points ledger, they are not separate currencies.
   and the demonstration footnote, and opens a pre-filled enrollment flow.
 - [ ] The phrase "guaranteed issue" appears nowhere in rendered member-facing text, while
   the `qualifiesForGuaranteedIssue` field name is unchanged.
-- [ ] April's screen reads as encouraging: "Your longest streak was 14 days. Complete 3
-  challenges today to start a new one." Never a bare 0, never "lost" or "broken".
+- [ ] April's screen reads as encouraging: "Your longest streak was 14 days. Complete
+  today's challenge to start a new one." Never a bare 0, never "lost" or "broken".
 - [ ] Points earned here appear in MyRewards' history for the same member — verify this
   cross-feature link explicitly, it's an easy thing to accidentally build as two
   disconnected systems.
-- [ ] Dennis's never-engaged state shows the five challenges as an inviting, tappable
-  checklist with "Complete any 3 today to start your streak" — not an empty-state
-  illustration with nothing to do.
+- [ ] Dennis's never-engaged state shows today's assigned challenge as an inviting,
+  tappable single card with "Complete today's challenge and your streak begins" — not an
+  empty-state illustration with nothing to do.
 
 ---
 

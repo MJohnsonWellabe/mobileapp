@@ -191,6 +191,17 @@ export const DAILY_CHALLENGES = [
   { id: 'mindfulness', label: 'One breathing or meditation session', detail: 'Even two minutes helps.' },
 ];
 
+/** One challenge is assigned per calendar day, rotating through the 5 fixed
+ *  types — not a checklist of all five (product owner correction; see
+ *  DECISIONS-LOG.md). Pure function of the date, so it never needs storing:
+ *  every member sees the same challenge on the same day, and a re-seed or a
+ *  reload can never disagree with what was shown earlier. */
+export function challengeForDate(date) {
+  const days = daysBetween('1970-01-01', date);
+  const index = ((days % DAILY_CHALLENGES.length) + DAILY_CHALLENGES.length) % DAILY_CHALLENGES.length;
+  return DAILY_CHALLENGES[index];
+}
+
 /** A day counts toward a streak at ONE completed challenge. Low bar on purpose:
  *  showing up is the habit, and the surest way to lose a member on a bad day is to
  *  tell them the day didn't count (docs/05-features-engagement.md). */

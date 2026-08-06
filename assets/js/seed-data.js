@@ -13,7 +13,15 @@
 // actionable. Values are Date objects and YYYY-MM-DD strings; each transport
 // converts to its own timestamp representation.
 
-import { addDays, addMonths, toYmd, startOfToday, tierFor, POINTS_PER_CHALLENGE } from './format.js';
+import {
+  addDays,
+  addMonths,
+  toYmd,
+  startOfToday,
+  tierFor,
+  challengeForDate,
+  POINTS_PER_CHALLENGE,
+} from './format.js';
 import { buildMailbox } from './seed-mailbox.js';
 
 const at = (today, days) => addDays(today, days);
@@ -589,26 +597,6 @@ const HEALTH = {
   },
 };
 
-const CHALLENGE_IDS = ['steps5k', 'calories400', 'stairs10', 'activity10min', 'mindfulness'];
-
-/** Deterministic pseudo-random, so re-running the seed produces identical documents
- *  and the idempotency requirement in docs/03 actually holds. */
-function seededRandom(seed) {
-  let s = seed >>> 0;
-  return () => {
-    s = (s * 1664525 + 1013904223) >>> 0;
-    return s / 4294967296;
-  };
-}
-
-function challengesForDay(rand, minCount) {
-  const count = minCount + Math.floor(rand() * (5 - minCount + 1));
-  const pool = [...CHALLENGE_IDS];
-  const picked = [];
-  for (let i = 0; i < count; i++) picked.push(...pool.splice(Math.floor(rand() * pool.length), 1));
-  return picked;
-}
-
 /* ============================================================= build ======= */
 
 /**
@@ -854,7 +842,6 @@ export function buildSeed(today = startOfToday()) {
 
   for (const m of MEMBERS) {
     const spec = HEALTH[m.key];
-    const rand = seededRandom(m.key.split('').reduce((a, c) => a + c.charCodeAt(0), 7));
     const creditedDates = [];
 
     if (spec.runs) {
@@ -870,15 +857,17 @@ export function buildSeed(today = startOfToday()) {
     }
 
     for (const offset of creditedDates) {
-      // One challenge is enough to credit a day, so seeded days run from 1 to 5 —
-      // which is also what real usage looks like, rather than everyone heroically
-      // completing most of the list every day.
-      const challenges = challengesForDay(rand, 1);
+      // One assigned challenge per day, not a choice of several — the day's
+      // completed entry is always that day's challengeForDate(), never anything
+      // else, so seeded history can never show a completion that wasn't actually
+      // available that day.
+      const date = at(today, offset);
+      const challenge = challengeForDate(date);
       put(`healthDailyLog/user-${m.key}_${ymd(today, offset)}`, {
         userId: `user-${m.key}`,
         date: ymd(today, offset),
-        challengesCompleted: challenges,
-        pointsEarned: challenges.length * POINTS_PER_CHALLENGE,
+        challengesCompleted: [challenge.id],
+        pointsEarned: POINTS_PER_CHALLENGE,
       });
     }
 

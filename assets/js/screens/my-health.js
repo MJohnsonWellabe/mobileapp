@@ -23,7 +23,7 @@ import {
 } from '../format.js';
 import { html, esc, toast, on, illustration } from '../ui.js';
 import { icons } from '../icons.js';
-import { toggleChallenge, connectTracker, persistStats, DAILY_CHALLENGES } from '../features/health.js';
+import { toggleChallenge, connectTracker, persistStats, challengeForDate } from '../features/health.js';
 
 const TRACKERS = ['Apple Health', 'Fitbit', 'Garmin', 'Samsung Health'];
 
@@ -107,7 +107,7 @@ page({
     const hasHI = policies.some((p) => p.product === 'hospitalIndemnity');
 
     return html`
-      ${streakCard(stats, profile)} ${challengesCard(todayLog)}
+      ${streakCard(stats, profile)} ${challengesCard(todayLog, today)}
       ${stats.qualifiesForGuaranteedIssue && !hasHI ? offerCard(stats, today) : windowCard(stats)}
       ${trackerCard(profile)} ${badgesCard(profile)}
     `;
@@ -141,12 +141,12 @@ function streakCard(stats, profile) {
     ${broken
       ? html`<h2>Welcome back</h2>
           <p>
-            Your longest streak was ${plural(profile.longestStreakDays, 'day')}. Complete one
-            challenge today to start a new one.
+            Your longest streak was ${plural(profile.longestStreakDays, 'day')}. Complete today's
+            challenge to start a new one.
           </p>`
       : never
         ? html`<h2>Let's get started</h2>
-            <p>Complete any one challenge today and your streak begins.</p>`
+            <p>Complete today's challenge and your streak begins.</p>`
         : html`<h2>${plural(stats.currentStreakDays, 'day')} in a row</h2>
             <p class="card__meta">
               Your longest streak is ${plural(Math.max(stats.longestStreakDays, profile.longestStreakDays ?? 0), 'day')}.
@@ -154,34 +154,29 @@ function streakCard(stats, profile) {
   </div>`;
 }
 
-function challengesCard(todayLog) {
-  const done = todayLog.length;
+function challengesCard(todayLog, today) {
+  // One assigned challenge per day, not a checklist of all five — see
+  // DECISIONS-LOG.md.
+  const challenge = challengeForDate(today);
+  const done = todayLog.includes(challenge.id);
   return html`<div class="today-card">
     <div class="today-card__copy" style="margin-bottom:var(--space-3)">
-      <div class="today-card__title">Today's challenges</div>
+      <div class="today-card__title">Today's challenge</div>
       <div class="today-card__meta">
-        ${done} of 5 complete.
-        ${done >= 1 ? 'Today counts toward your streak.' : 'Any one of these counts your day.'}
+        ${done ? 'Complete. Today counts toward your streak.' : 'Complete it to count your day.'}
       </div>
     </div>
     <ul class="challenge-list">
-      ${DAILY_CHALLENGES.map(
-        (c) => html`<li>
-          <button
-            class="challenge"
-            type="button"
-            data-challenge="${c.id}"
-            aria-pressed="${todayLog.includes(c.id)}"
-          >
-            <span class="challenge__box" aria-hidden="true">${icons.check()}</span>
-            <span class="challenge__label">
-              ${esc(c.label)}<br /><span style="font-size:var(--text-sm);color:var(--color-text-secondary)"
-                >${esc(c.detail)}</span
-              >
-            </span>
-          </button>
-        </li>`,
-      )}
+      <li>
+        <button class="challenge" type="button" data-challenge="${challenge.id}" aria-pressed="${done}">
+          <span class="challenge__box" aria-hidden="true">${icons.check()}</span>
+          <span class="challenge__label">
+            ${esc(challenge.label)}<br /><span style="font-size:var(--text-sm);color:var(--color-text-secondary)"
+              >${esc(challenge.detail)}</span
+            >
+          </span>
+        </button>
+      </li>
     </ul>
   </div>`;
 }

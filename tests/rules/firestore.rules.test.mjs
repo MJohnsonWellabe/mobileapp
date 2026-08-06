@@ -424,6 +424,17 @@ describe("healthDailyLog — composite ID must match its contents", () => {
       setDoc(doc(db, "healthDailyLog/user-todd_2026-08-06"), {
         userId: "user-todd",
         date: "2026-08-06",
+        challengesCompleted: ["steps5k"],
+        pointsEarned: 10,
+      })
+    );
+  });
+
+  test("more than one challenge a day is rejected — one is assigned, not chosen", async () => {
+    await assertFails(
+      setDoc(doc(db, "healthDailyLog/user-todd_2026-08-06"), {
+        userId: "user-todd",
+        date: "2026-08-06",
         challengesCompleted: ["steps5k", "mindfulness"],
         pointsEarned: 20,
       })

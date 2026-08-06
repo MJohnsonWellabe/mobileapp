@@ -136,11 +136,15 @@ it just needs to look real and specific, not "Article 1."
 | Field | Type | Notes |
 |---|---|---|
 | `userId`, `date` | | |
-| `challengesCompleted` | array of challenge IDs | Subset of the 5 daily challenge types |
-| `pointsEarned` | number | |
+| `challengesCompleted` | array of 0 or 1 challenge IDs | The single challenge assigned to that calendar date, if completed — never more than one entry (product owner correction; see `DECISIONS-LOG.md`) |
+| `pointsEarned` | number | `0` or `POINTS_PER_CHALLENGE` (10) |
 
 Daily challenge catalog (static, same 5 for everyone): 5,000 steps · Burn 400 calories ·
 Climb 10 flights of stairs · 10 minutes of activity · One breathing/meditation session.
+Exactly **one** of the five is assigned per calendar day — not a checklist of all five —
+rotating deterministically by date (`challengeForDate()` in `format.js`, the same function
+the app and the seeder both call, so neither can disagree about which challenge a given
+date carries). Every member sees the same challenge on the same day.
 
 ### `careProviders/{providerId}` (shared, not per-user)
 
@@ -252,7 +256,7 @@ the morning of the demo must reproduce the same *demo state*, not the same *lite
 
 | Member | `healthDailyLog` seeding | Coverage dates |
 |---|---|---|
-| **Todd** | 82 credited days (1–5 challenges each) across `TODAY−99 … TODAY−1`, as five runs separated by four gaps totalling 17 uncredited days. **`TODAY` itself is left empty**, so a presenter can complete a challenge live and watch 82 become 83 | active |
+| **Todd** | 82 credited days (each day's one assigned challenge, per `challengeForDate()`) across `TODAY−99 … TODAY−1`, as five runs separated by four gaps totalling 17 uncredited days. **`TODAY` itself is left empty**, so a presenter can complete a challenge live and watch 82 become 83 | active |
 | **Matt** | 45 consecutive credited days ending `TODAY−1` | both active |
 | **Debbie** | 20 consecutive credited days ending `TODAY−1` | active |
 | **Dave** | 12 consecutive credited days ending `TODAY−1` | `effectiveDate = TODAY − 6 years` |

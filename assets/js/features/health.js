@@ -13,6 +13,7 @@ import {
 } from '../data.js';
 import {
   DAILY_CHALLENGES,
+  challengeForDate,
   deriveHealthStats,
   toYmd,
   startOfToday,
@@ -24,7 +25,7 @@ import {
 } from '../format.js';
 import { noticeOfferUnlocked } from '../notices.js';
 
-export { DAILY_CHALLENGES };
+export { DAILY_CHALLENGES, challengeForDate };
 
 /**
  * Toggle one of today's challenges and settle every consequence of it.

@@ -326,6 +326,24 @@ any app code existed.)*
   80/100 milestone reachable by consistency rather than by volume. Changed in
   `format.js` (`CREDITED_DAY_THRESHOLD`), the Today card copy, the seeded daily logs
   (now 1–5 challenges a day rather than 3–5), and `docs/05`/`docs/03`.
+- **One challenge is assigned per day, not five to choose from.** A later product-owner
+  correction on top of the one above: MyHealth and the Home Today card had been showing all
+  5 fixed challenge types every day as a checklist, crediting the day at any one completed.
+  The product owner corrected this — exactly one challenge is assigned per calendar day, and
+  it's the only one shown. Implemented as a pure function of the date,
+  `challengeForDate()` in `format.js` (rotates through the 5 fixed types, `days since epoch
+  mod 5`), so it needs no storage and every member sees the same challenge on the same day —
+  a reload or re-seed can never disagree with what was shown earlier. `isCreditedDay` and
+  every derived stat (`deriveHealthStats`, streaks, the 100-day window, milestones) were
+  already keyed off `challengesCompleted.length >= 1`, so none of that math changed; only
+  what's offered did. `firestore.rules`' `dailyLogValid()` tightened from
+  `challengesCompleted.size() <= 5` to `<= 1` (plus the previously-commented-out
+  `hasOnly` check on the 5 valid IDs) and `pointsEarned` from `<= 1000` to `<= 10`, both
+  now real invariants instead of loose bounds. `seed-data.js`'s per-day challenge picker
+  (`challengesForDay`, a seeded-random draw of 1–5 from the pool) is gone; every credited
+  seed date now writes `[challengeForDate(date).id]`. Touched: `format.js`, `features/
+  health.js`, `screens/home.js`, `screens/my-health.js`, `seed-data.js`, `firestore.rules`,
+  `tests/rules/firestore.rules.test.mjs`, `docs/03`, `docs/05`.
 - **Firebase SDK vendored into the repo instead of loaded from the gstatic CDN.**
   `docs/02` preferred CDN imports. Three things outweighed that: the demo no longer depends
   on a third party at runtime, version drift across three separate pinned URLs becomes

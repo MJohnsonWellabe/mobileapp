@@ -568,6 +568,9 @@ service cloud.firestore {
     // ---------------------------------------------------------------------
 
     function dailyLogValid(d) {
+      // One assigned challenge per day, not a choice of several (product owner
+      // correction — see DECISIONS-LOG.md): at most one entry, and it has to be
+      // one of the 5 fixed challenge IDs.
       return d.keys().hasAll(['userId', 'date', 'challengesCompleted',
                               'pointsEarned'])
         && d.keys().hasOnly(['userId', 'date', 'challengesCompleted',
@@ -575,12 +578,11 @@ service cloud.firestore {
         && isMemberId(d.userId)
         && isYmd(d.date)
         && d.challengesCompleted is list
-        && d.challengesCompleted.size() <= 5
+        && d.challengesCompleted.size() <= 1
+        && d.challengesCompleted.hasOnly(['steps5k', 'calories400',
+             'stairs10', 'activity10min', 'mindfulness'])
         && d.pointsEarned is number
-        && d.pointsEarned >= 0 && d.pointsEarned <= 1000;
-      // Once the 5 challenge IDs are fixed in my-health.js, tighten with:
-      //   && d.challengesCompleted.hasOnly(['steps5k', 'calories400',
-      //        'stairs10', 'activity10min', 'mindfulness'])
+        && d.pointsEarned >= 0 && d.pointsEarned <= 10;
     }
 
     match /healthDailyLog/{logId} {
