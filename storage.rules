@@ -2,7 +2,7 @@ rules_version = '2';
 
 // =============================================================================
 // Wellabe member-app prototype — Cloud Storage security rules
-// Bucket: mobileapp-3dcda.firebasestorage.app
+// Bucket: the default bucket of the project in .firebaserc
 //
 // Same threat model as firestore.rules: request.auth is always null, so the
 // {userId} path segment below is a NAMING CONVENTION, not an access boundary.

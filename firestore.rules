@@ -2,7 +2,7 @@ rules_version = '2';
 
 // =============================================================================
 // Wellabe member-app prototype — Firestore security rules
-// Project: mobileapp-3dcda
+// Project: see .firebaserc
 //
 // THREAT MODEL — READ THIS FIRST.
 // This app has NO Firebase Auth by deliberate design (docs/02-architecture.md

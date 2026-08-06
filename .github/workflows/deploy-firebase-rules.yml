@@ -1,6 +1,6 @@
 name: Deploy Firebase rules
 
-# Deploys firestore.rules and storage.rules to project mobileapp-3dcda.
+# Deploys firestore.rules and storage.rules to the project named in .firebaserc.
 #
 # Setup required once, by a human (see setup/FIREBASE-SETUP.md §7):
 #   a service account with roles/firebaserules.admin + roles/firebase.developAdmin,
@@ -86,13 +86,16 @@ jobs:
           node -e "JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'))" \
             "${RUNNER_TEMP}/firebase-sa.json"
 
+      # The target project comes from .firebaserc ("projects.default"), which is the
+      # single place to change it. Do not hardcode a project ID here as well — two
+      # sources of truth is how a deploy silently lands in the wrong project.
       - name: Deploy Firestore and Storage rules
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-sa.json
         run: |
+          echo "Deploying to project: $(node -p "require('./.firebaserc').projects.default")"
           npx --yes firebase-tools@15 deploy \
             --only firestore:rules,storage \
-            --project mobileapp-3dcda \
             --non-interactive
 
       - name: Remove credentials

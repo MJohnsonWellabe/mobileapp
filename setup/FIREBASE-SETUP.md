@@ -15,6 +15,17 @@ maintaining it.
 
 ## 2. Create a Firestore database
 
+> **Cloud Firestore, not Realtime Database.** The console lists both under **Build**, one
+> above the other, and they are entirely different products. This project uses **Firestore**
+> — `docs/03-data-model-and-seed-data.md` is a collection/document schema and
+> `firestore.rules` is written in Firestore's rules language, none of which applies to
+> Realtime Database's single JSON tree. If the page header says "Realtime Database" or the
+> URL ends in `.firebaseio.com`, you are in the wrong one.
+>
+> Creating an RTDB instance by mistake is harmless as long as nothing uses it, but leave
+> its rules locked (`{"rules": {".read": false, ".write": false}}`) or delete the instance,
+> so an unused database isn't sitting open.
+
 1. In the left nav, go to **Build → Firestore Database**.
 2. Click **Create database**.
 3. Choose a location close to you (any US region is fine for a demo). **This is permanent
@@ -121,7 +132,7 @@ That needs one credential, created once:
 To deploy by hand instead, from a checkout with the Firebase CLI installed and logged in:
 
 ```bash
-firebase deploy --only firestore:rules,storage --project mobileapp-3dcda
+firebase deploy --only firestore:rules,storage   # target comes from .firebaserc
 ```
 
 ### Seeding data once rules are live
@@ -171,8 +182,8 @@ into a `<canvas>`, or downloads one as a blob.
 [Cloud Shell](https://console.cloud.google.com/) so you don't need a local install:
 
 ```bash
-gsutil cors set cors.json gs://mobileapp-3dcda.firebasestorage.app
-gsutil cors get gs://mobileapp-3dcda.firebasestorage.app
+gsutil cors set cors.json gs://<YOUR-PROJECT-ID>.firebasestorage.app
+gsutil cors get gs://<YOUR-PROJECT-ID>.firebasestorage.app
 ```
 
 Edit `cors.json` first if your Pages origin differs from the one listed. Origins are exact
