@@ -143,7 +143,7 @@ export function noticeOfferUnlocked({ userId, daysCompleted }) {
  * both consume. Recomputed on every render, so it self-clears the moment the
  * underlying condition resolves.
  */
-export function attentionItems({ policies = [], user, health, today = startOfToday() }) {
+export function attentionItems({ policies = [], claims = [], user, health, today = startOfToday() }) {
   const items = [];
 
   for (const policy of policies) {
@@ -172,6 +172,25 @@ export function attentionItems({ policies = [], user, health, today = startOfTod
         body: `${formatMoney(policy.premiumAmount)} is due by ${formatDate(policy.paidThroughDate)}.`,
         actionLabel: 'Make a payment',
         actionTarget: `payments?policy=${policy.id}`,
+      });
+    }
+  }
+
+  // A denied claim is exactly the kind of bad news "you're all caught up" must
+  // never sit above — added after a visual QA finding turned up "Nothing needs
+  // your attention" directly over an unread claim-denied notice (docs/04 didn't
+  // originally list this condition; DECISIONS-LOG.md records the addition).
+  // Durable like the conditions above: it clears only if the claim's own status
+  // changes, never on a timer or a read flag.
+  for (const claim of claims) {
+    if (claim.status === 'Denied') {
+      items.push({
+        id: `denied-${claim.id}`,
+        tone: 'danger',
+        title: `Your ${PRODUCT_LABELS[claim.product] ?? claim.product} claim was denied`,
+        body: claim.deniedReason || 'See the claim for what to do next.',
+        actionLabel: 'View claim',
+        actionTarget: `claims?id=${claim.id}`,
       });
     }
   }

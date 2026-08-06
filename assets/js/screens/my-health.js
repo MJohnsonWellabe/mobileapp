@@ -163,7 +163,7 @@ function challengesCard(todayLog, today) {
     <div class="today-card__copy" style="margin-bottom:var(--space-3)">
       <div class="today-card__title">Today's challenge</div>
       <div class="today-card__meta">
-        ${done ? 'Complete. Today counts toward your streak.' : 'Complete it to count your day.'}
+        ${done ? 'Complete. Today counts toward your streak.' : 'Complete it to count today.'}
       </div>
     </div>
     <ul class="challenge-list">
@@ -206,11 +206,11 @@ function windowCard(stats) {
   const pct = Math.min(1, stats.challengeDaysCompletedInWindow / WINDOW_QUALIFY_DAYS);
   const toGo = Math.max(0, WINDOW_QUALIFY_DAYS - stats.challengeDaysCompletedInWindow);
   return html`<div class="card stack-sm">
-    <h3 class="card__title">Your 100-day progress — ${WINDOW_QUALIFY_DAYS} days unlocks an offer</h3>
+    <h3 class="card__title">Your 100-day progress — ${WINDOW_QUALIFY_DAYS} days unlock an offer</h3>
     <p class="card__meta">
       ${stats.challengeDaysCompletedInWindow} of the last ${WINDOW_DAYS} days counted toward the
       ${WINDOW_QUALIFY_DAYS}-day target.
-      ${toGo ? `${plural(toGo, 'more day')} unlocks a no-health-questions coverage offer.` : ''}
+      ${toGo ? `${plural(toGo, 'more day')} ${toGo === 1 ? 'unlocks' : 'unlock'} a no-health-questions coverage offer.` : ''}
     </p>
     <div class="meter"><span class="meter__fill" style="width:${(pct * 100).toFixed(0)}%"></span></div>
   </div>`;
@@ -222,7 +222,7 @@ function trackerCard(profile) {
         <h3 class="card__title">Your tracker</h3>
         <span class="pill pill--success">${icons.checkCircle()}${esc(profile.connectedTracker)}</span>
         <p class="card__meta">
-          Your steps and activity come in automatically. You can still tick anything off by
+          Your steps and activity come in automatically. You can still check anything off by
           hand.
         </p>
       </div>`

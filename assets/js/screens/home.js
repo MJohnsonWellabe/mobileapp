@@ -101,7 +101,7 @@ function render(state) {
   const today = startOfToday();
   const stats = deriveHealthStats(logs, today);
   const todayLog = logs[toYmd(today)]?.challengesCompleted ?? [];
-  const attention = attentionItems({ policies, user, health: stats, today });
+  const attention = attentionItems({ policies, claims, user, health: stats, today });
   const unread = state.notices.filter((n) => !n.read).length;
 
   return html`

@@ -12,6 +12,7 @@ import {
   subscribeDocuments,
   subscribeThreads,
   subscribePolicies,
+  subscribeClaims,
   subscribeUser,
   markNoticeRead,
   createThread,
@@ -52,7 +53,7 @@ const PREF_ROWS = [
 page({
   title: 'MyMailbox',
   tab: 'more',
-  ready: ['notices', 'documents', 'threads', 'policies', 'user'],
+  ready: ['notices', 'documents', 'threads', 'policies', 'claims', 'user'],
   illustrations: ['thinking-at-computer', 'video-call'],
   subViewKeys: ['mode', 'openNotice', 'openDocument', 'openThread'],
 
@@ -68,6 +69,7 @@ page({
     }
     subscribeUser(session.userId, (user) => update({ user }));
     subscribePolicies(session.userId, (policies) => update({ policies }));
+    subscribeClaims(session.userId, (claims) => update({ claims }));
     subscribeNotices(session.userId, (notices) => update({ notices }));
     subscribeDocuments(session.userId, (documents) => update({ documents }));
     subscribeThreads(session.userId, (threads) => update({ threads }));
@@ -216,7 +218,7 @@ page({
   },
 
   render(state, ctx) {
-    const { notices, documents, threads, policies, user } = state;
+    const { notices, documents, threads, policies, claims, user } = state;
     const v = ctx.view;
 
     if (v.mode === 'preferences') return preferencesView(user);
@@ -234,7 +236,7 @@ page({
       if (thread) return threadView(thread);
     }
 
-    const attention = attentionItems({ policies, user, today: startOfToday() });
+    const attention = attentionItems({ policies, claims, user, today: startOfToday() });
 
     return html`
       <div class="segmented" role="tablist">

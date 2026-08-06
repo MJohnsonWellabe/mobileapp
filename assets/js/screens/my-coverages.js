@@ -28,7 +28,7 @@ const PRODUCT_CATALOG = {
   },
   hospitalIndemnity: {
     planName: 'Hospital Indemnity — Essential',
-    blurb: 'Cash paid straight to you for every day you spend in hospital.',
+    blurb: 'Cash paid straight to you for every day you spend in the hospital.',
     premium: 64.0,
     frequency: 'monthly',
   },

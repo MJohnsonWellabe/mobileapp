@@ -331,7 +331,7 @@ const POLICIES = [
     premiumFrequency: 'monthly',
     autopayEnabled: true,
     coverageSummary:
-      'Full cover for cleanings and exams, with a larger annual maximum for the bigger ' +
+      'Full coverage for cleanings and exams, with a larger annual maximum for the bigger ' +
       'work when it comes up.',
     whatItCovers: [
       'Two cleanings and exams a year, no waiting period',
@@ -352,7 +352,7 @@ const POLICIES = [
     premiumFrequency: 'monthly',
     autopayEnabled: false,
     coverageSummary:
-      'Pays you cash for every day you spend in hospital, whatever your other coverage ' +
+      'Pays you cash for every day you spend in the hospital, whatever your other coverage ' +
       'already pays.',
     whatItCovers: [
       '$400 for each day admitted to hospital',

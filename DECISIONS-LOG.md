@@ -558,6 +558,50 @@ not a code defect. Anyone chasing a "missing health log days" report against the
 specifically should re-check against `--admin --verify` on the real project before assuming
 the seed logic is wrong.
 
+## Full-app visual QA re-pass (Phase 4)
+
+Ran `visual-qa-reviewer` fresh across all 70 screenshots (every screen, both breakpoints,
+representative members + admin). Verdict: **FAIL**, 3 blocking findings. All three fixed and
+verified; a further round of notable/minor findings is logged in the closing summary below
+rather than all chased in this pass — see "what's intentionally thin" there.
+
+- **Currency amounts wrapped mid-number at 375px.** MyPayments' Payment History rows put a
+  bare `${formatMoney(...)}<br/>` inside `.data-row__value`, which sets
+  `overflow-wrap: anywhere` (correct for its other uses — addresses, emails — where
+  wrapping *should* be possible). At 375px a 3-digit premium like $148.50 had nowhere else
+  to break, so it split into "$148." / "50" on two lines. Fixed by wrapping just the money
+  span in `white-space: nowrap`, not by touching the shared class.
+- **"Nothing needs your attention" could sit directly above an unread denied-claim
+  notice.** `attentionItems()` only ever derived from `policies`/`user`/`health` —
+  `docs/04`'s own MyMailbox spec never listed a denied claim as a derived condition, which
+  is a real gap in the original design bible, not just an implementation miss. Added a new
+  derived condition, danger-tier, for any claim with `status === 'Denied'`: title, the
+  claim's own `deniedReason`, and a "View claim" action to `claims?id=<id>`. Threaded
+  `claims` through both call sites (`home.js` already had it in state; `my-mailbox.js`
+  needed a new `subscribeClaims` subscription added). Durable like the other three
+  conditions — clears only if the claim's status itself changes, never on a read flag or a
+  timer. `docs/04` should be read as amended to include this as a fifth condition.
+- **The rewards points ledger didn't reconcile.** "Recent activity" (formerly "Points
+  history") shows a small hand-authored sample of transactions per member — deliberately
+  not exhaustive, since `rewardsAccounts.lifetimePointsEarned`/`pointsBalance` are separate
+  hand-set totals meant to represent years of unlisted activity (Dave's is 6 years
+  tenured). Checked: summing every member's visible sample as if it were the complete
+  ledger goes *negative* for 5 of 8 members, confirming the sample was never meant to be
+  read as complete — but nothing on screen said so, so it read as three numbers silently
+  contradicting each other. Retitled the section "Recent activity" and added an explicit
+  disclosure: "Showing your most recent activity. Earlier earning and redeeming is folded
+  into the lifetime and balance totals above." Fabricating a fully exhaustive multi-year
+  transaction ledger per member was the alternative and heavier-weight fix; framing what's
+  already there honestly is the one actually taken.
+
+Also fixed from the same pass, all minor/cheap: a subject-verb slip in the 100-day
+progress card copy (introduced by me earlier this session — "80 days unlocks" → "unlock"),
+British spellings ("in hospital" → "in the hospital", "Full cover" → "Full coverage"),
+"tick" → "check" in MyHealth's tracker copy, unified "Complete it to count today" wording
+between Home and MyHealth (they'd drifted to two different phrasings), and a password-field
+hint added to the login form to match the username field's ("Case doesn't matter.", without
+printing the actual demo password on screen).
+
 ## Closing summary
 
 *(Filled in at the end of Phase 4: what's solid, what's intentionally thin and why, and

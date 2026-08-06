@@ -163,9 +163,13 @@ page({
       </div>
 
       <div class="stack-sm">
-        <h2 class="section-heading">Points history</h2>
+        <h2 class="section-heading">Recent activity</h2>
         ${transactions.length
-          ? html`<div class="card card--flush">${transactions.map(historyRow)}</div>`
+          ? html`<div class="card card--flush">${transactions.map(historyRow)}</div>
+              <p class="disclosure">
+                Showing your most recent activity. Earlier earning and redeeming is folded
+                into the lifetime and balance totals above.
+              </p>`
           : emptyState({
               art: 'thinking-at-computer',
               title: 'Nothing here yet',
@@ -203,7 +207,7 @@ function balanceCard(account) {
     <div class="meter"><span class="meter__fill" style="width:${(pct * 100).toFixed(0)}%"></span></div>
     <p class="disclosure">
       Tier is based on lifetime points earned (${formatPoints(lifetime)} so far) and never goes
-      down when you redeem — your spendable balance above is separate and does.
+      down when you redeem — your spendable balance above is separate, and that one does.
     </p>
   </div>`;
 }

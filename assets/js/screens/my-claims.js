@@ -278,7 +278,7 @@ function newClaimForm(policies, ctx) {
           name="description"
           rows="5"
           required
-          placeholder="For example: two nights in hospital after a fall at home."
+          placeholder="For example: two nights in the hospital after a fall at home."
           data-focus-key="description"
         ></textarea>
         <span class="field__hint">A sentence or two is plenty. We'll come back to you if we need more.</span>

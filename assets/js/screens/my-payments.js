@@ -215,7 +215,7 @@ function paymentRow(payment, policies) {
       >
     </span>
     <span class="data-row__value">
-      ${formatMoney(payment.amount)}<br />
+      <span style="white-space:nowrap">${formatMoney(payment.amount)}</span><br />
       <span class="pill pill--${ok ? 'success' : 'danger'}"
         >${ok ? icons.checkCircle() : icons.alert()}${ok ? 'Paid' : 'Failed'}</span
       >
