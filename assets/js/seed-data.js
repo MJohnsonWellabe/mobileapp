@@ -854,7 +854,10 @@ export function buildSeed(today = startOfToday()) {
     }
 
     for (const offset of creditedDates) {
-      const challenges = challengesForDay(rand, 3);
+      // One challenge is enough to credit a day, so seeded days run from 1 to 5 —
+      // which is also what real usage looks like, rather than everyone heroically
+      // completing most of the list every day.
+      const challenges = challengesForDay(rand, 1);
       put(`healthDailyLog/user-${m.key}_${ymd(today, offset)}`, {
         userId: `user-${m.key}`,
         date: ymd(today, offset),

@@ -316,6 +316,16 @@ every routine implementation choice already specified in the docs. The pre-build
 "Feature-level judgment calls" section above covers the rules/schema decisions made before
 any app code existed.)*
 
+- **A credited day is one completed challenge, not three.** The Phase 0 critique proposed
+  a threshold of three of five, on the reasoning that three is "achievable on an ordinary
+  day, not achievable by accident" and makes "82 of 100" mean something. The product owner
+  overrode it: one challenge credits the day. That is the right call for this member base —
+  the streak exists to build the habit of opening the app and doing *something*, and a
+  member having a bad day who completes one challenge and is told the day didn't count is
+  exactly the punitive framing `docs/05` rules out everywhere else. It also makes the
+  80/100 milestone reachable by consistency rather than by volume. Changed in
+  `format.js` (`CREDITED_DAY_THRESHOLD`), the Today card copy, the seeded daily logs
+  (now 1–5 challenges a day rather than 3–5), and `docs/05`/`docs/03`.
 - **Firebase SDK vendored into the repo instead of loaded from the gstatic CDN.**
   `docs/02` preferred CDN imports. Three things outweighed that: the demo no longer depends
   on a third party at runtime, version drift across three separate pinned URLs becomes

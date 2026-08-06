@@ -191,9 +191,10 @@ export const DAILY_CHALLENGES = [
   { id: 'mindfulness', label: 'One breathing or meditation session', detail: 'Even two minutes helps.' },
 ];
 
-/** A day counts toward a streak at 3 or more of the 5 challenges — achievable on an
- *  ordinary day, not achievable by accident (docs/05-features-engagement.md). */
-export const CREDITED_DAY_THRESHOLD = 3;
+/** A day counts toward a streak at ONE completed challenge. Low bar on purpose:
+ *  showing up is the habit, and the surest way to lose a member on a bad day is to
+ *  tell them the day didn't count (docs/05-features-engagement.md). */
+export const CREDITED_DAY_THRESHOLD = 1;
 export const POINTS_PER_CHALLENGE = 10;
 export const POINTS_STREAK_MILESTONE = 50;
 export const POINTS_WINDOW_MILESTONE = 250;

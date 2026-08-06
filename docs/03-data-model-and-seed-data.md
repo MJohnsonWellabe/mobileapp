@@ -252,7 +252,7 @@ the morning of the demo must reproduce the same *demo state*, not the same *lite
 
 | Member | `healthDailyLog` seeding | Coverage dates |
 |---|---|---|
-| **Todd** | 82 credited days (3–5 challenges each) scattered across `TODAY−99 … TODAY−1`, with 18 uncredited gaps. **`TODAY` itself is left empty**, so a presenter can complete today's challenges live and watch 82 become 83 | active |
+| **Todd** | 82 credited days (1–5 challenges each) across `TODAY−99 … TODAY−1`, as five runs separated by four gaps totalling 17 uncredited days. **`TODAY` itself is left empty**, so a presenter can complete a challenge live and watch 82 become 83 | active |
 | **Matt** | 45 consecutive credited days ending `TODAY−1` | both active |
 | **Debbie** | 20 consecutive credited days ending `TODAY−1` | active |
 | **Dave** | 12 consecutive credited days ending `TODAY−1` | `effectiveDate = TODAY − 6 years` |

@@ -221,9 +221,7 @@ function todayCard(stats, todayLog) {
         <div class="today-card__title">Today</div>
         <div class="today-card__meta">
           ${done} of 5 complete.
-          ${done >= 3
-            ? "Today counts toward your streak."
-            : `Complete any ${3 - done} to count today.`}
+          ${done >= 1 ? 'Today counts toward your streak.' : 'Complete any one to count today.'}
         </div>
       </div>
     </div>

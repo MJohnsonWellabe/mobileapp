@@ -66,10 +66,13 @@ programs like Vitality connect health behavior to insurance outcomes.
 ### Definitions (these numbers must mean exactly one thing everywhere in the app)
 
 - **A credited day.** A calendar day (member's local date) counts as credited when
-  `healthDailyLog[userId_date].challengesCompleted.length >= 3` — three or more of the
-  five. Three is achievable on an ordinary day, not achievable by accident, and it makes
-  "82 of 100" mean something. `dayCredited` is derived from the existing array; no new
-  field, so `firestore.rules`' shape contract is untouched.
+  `healthDailyLog[userId_date].challengesCompleted.length >= 1` — **one** completed
+  challenge is enough. The bar is deliberately low: showing up is the habit being built,
+  and the fastest way to lose a member on a bad day is to tell them the day didn't count.
+  An earlier draft of this section set the threshold at three of five; that was changed on
+  the product owner's call, and the reasoning is recorded in `DECISIONS-LOG.md`.
+  `dayCredited` is derived from the existing array; no new field, so `firestore.rules`'
+  shape contract is untouched.
 - **Current streak.** Consecutive credited days ending **today or yesterday**. If the most
   recent credited day is older than yesterday, `currentStreakDays` is 0 — a day still in
   progress never breaks a streak, so a member who opens the app in the morning is never
@@ -163,9 +166,9 @@ same `rewardsAccounts`/`rewardsTransactions` system used by MyRewards — these 
 share one points ledger, they are not separate currencies.
 
 **Acceptance criteria**
-- [ ] Completing 1 or 2 of today's challenges shows day progress ("2 of 5 today") but does
-  **not** increment the streak. Completing the 3rd increments it by exactly 1. The 4th and
-  5th do not increment it again.
+- [ ] Completing the first of today's challenges increments the streak by exactly 1 and
+  the day reads as counting. Completing the 2nd through 5th shows day progress
+  ("3 of 5 today") and credits points, but does not increment the streak again.
 - [ ] Un-completing and re-completing the same challenge on the same day produces exactly
   one `rewardsTransactions` document for it. Verify by counting documents, not by checking
   the balance.

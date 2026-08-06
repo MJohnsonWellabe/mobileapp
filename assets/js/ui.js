@@ -63,12 +63,15 @@ export function dataRow(label, value, { valueHtml, id } = {}) {
   </div>`;
 }
 
-/** Tappable data row — used where a row opens an editor or detail screen. */
-export function dataRowButton(label, value, { action, valueHtml, disabled } = {}) {
+/** Tappable data row — used where a row opens an editor or detail screen.
+ *  `data` takes arbitrary data-* attributes, so a caller can hang whatever hook it
+ *  delegates on off the row: dataRowButton('Gender', v, { data: { locked: 'gender' } }). */
+export function dataRowButton(label, value, { action, valueHtml, disabled, data = {} } = {}) {
   return html`<button
     class="data-row"
     type="button"
-    data-action="${esc(action)}"
+    ${action ? `data-action="${esc(action)}"` : ''}
+    ${dataAttrs(data)}
     ${disabled ? 'disabled' : ''}
   >
     <span class="data-row__label">${esc(label)}</span>
@@ -77,6 +80,14 @@ export function dataRowButton(label, value, { action, valueHtml, disabled } = {}
       <span class="data-row__chevron" aria-hidden="true">${icons.chevronRight()}</span></span
     >
   </button>`;
+}
+
+/** Serialise { locked: 'gender' } to `data-locked="gender"`, camelCase to kebab. */
+export function dataAttrs(data) {
+  return Object.entries(data)
+    .filter(([, v]) => v !== undefined && v !== null)
+    .map(([k, v]) => `data-${k.replace(/[A-Z]/g, (c) => '-' + c.toLowerCase())}="${esc(v)}"`)
+    .join(' ');
 }
 
 export function sectionCard({ href, icon, title, status, badge }) {
