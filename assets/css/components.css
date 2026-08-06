@@ -300,6 +300,13 @@ a {
   align-items: center;
   gap: var(--space-3);
   width: 100%;
+  /* .section-grid is a CSS Grid container, and grid items default to an
+     automatic minimum width equal to their own min-content size — which the
+     long nowrap status line can push past the grid's available width at
+     narrow viewports, overflowing the whole page and pushing the fixed
+     bottom tab bar out from under the resized screenshot viewport. This
+     overrides that floor so the card actually shrinks to fit its column. */
+  min-width: 0;
   text-align: left;
   text-decoration: none;
   color: inherit;

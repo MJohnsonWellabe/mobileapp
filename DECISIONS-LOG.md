@@ -409,16 +409,33 @@ with a long tail of notable and minor items. This section is the handoff.
   inconsistency: the pill, tracker and notice used "Processing", "In review" and "Reviewing"
   for one stage, and an in-progress claim was tinted with the warning token as though
   something were wrong. Only Denied gets an alarming tone now.
+- **The bottom tab bar clipped on Home at 375px**, showing only the top of each icon and no
+  labels — correct at 430px and on every other screen at 375px, so it was specific to the
+  tallest page. Root cause had nothing to do with height or the tab bar itself:
+  `.section-card` is a CSS Grid item inside `.section-grid` (`display:grid`, no explicit
+  columns), and grid items get an automatic minimum width equal to their own min-content
+  size unless overridden. The card's `white-space: nowrap` status line pushed that
+  min-content floor to ~369px, which exceeds the ~343px available at 375px width (but not
+  the ~398px available at 430px) — so the whole page overflowed horizontally by exactly that
+  amount, and `position: fixed` on an overflowing document uses the wider layout viewport as
+  its containing block, stretching the tab bar past the visible frame and clipping its
+  bottom in the screenshot tool's viewport-resize-then-capture step. Fixed with one line,
+  `min-width: 0` on `.section-card` itself (not just its `__body`, which already had it) —
+  the standard override for this exact CSS Grid/Flexbox default. Worth remembering for any
+  future card-in-a-grid: the automatic minimum size applies to the grid *item*, not just
+  whatever flex children live inside it.
+- **April's payment history contradicted her balance.** The card said paid through June 6
+  and asked for $174.00, while the history immediately below showed a successful $58.00
+  payment on July 6. Root cause: `seed-data.js`'s payment-history loop generated `count`
+  successful payments for every policy unconditionally, including April's lapsed one, so the
+  most recent generated payment's `resultingPaidThroughDate` landed after her policy's actual
+  (2-months-behind) `paidThroughDate`. Fixed by skipping any generated payment whose
+  resulting date would exceed the policy's stored `paidThroughDate` — a one-line guard, no
+  schema change.
 
 **Still open — worth doing before the demo:**
 
-1. **The bottom tab bar clips on Home at 375px** on every member, showing only the top of
-   each icon and no labels. It renders correctly on the same screens at 430px and on other
-   screens at 375px, so it is specific to the tallest page.
-2. **April's payment history contradicts her balance.** The card says paid through June 6 and
-   asks for $174.00, while the history immediately below shows a successful $58.00 payment on
-   July 6. The seeded history needs to reconcile with the seeded paid-through date.
-3. **Brand yellow is doing status work**, which the design system forbids: the rewards tier
+1. **Brand yellow is doing status work**, which the design system forbids: the rewards tier
    chip, the points chips, the streak ring, badge borders, and the admin console's active-tab
    underline. The rewards tier chip is the worst of these — Bronze, Silver and Gold all
    render as the same gold pill.
