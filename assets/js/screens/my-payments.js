@@ -60,6 +60,7 @@ page({
       ctx.view.policyId = el.dataset.pay;
       ctx.view.mode = 'form';
       ctx.view.error = null;
+      ctx.view.otherAmount = '';
       window.scrollTo(0, 0);
       ctx.repaint();
     });
@@ -79,6 +80,14 @@ page({
 
     on(app, 'change', 'input[name="amountChoice"]', (event, el) => {
       ctx.view.amountChoice = el.value;
+      ctx.repaint();
+    });
+
+    // Live-tracked so Submit can be disabled the moment a lapsed policy's partial
+    // "another amount" wouldn't reinstate it (docs/04: "Submit never becomes
+    // enabled"), not just rejected after the tap.
+    on(app, 'input', 'input[name="otherAmount"]', (event, el) => {
+      ctx.view.otherAmount = el.value;
       ctx.repaint();
     });
 
@@ -220,6 +229,14 @@ function payForm(policy, user, ctx, today) {
   const choice = ctx.view.amountChoice ?? 'due';
   const card = user.cardOnFile;
   const showOnePeriod = due.periodsOwed > 1;
+  // Partial payment can never reinstate a lapsed policy (docs/04's reinstatement
+  // rule) — Submit is disabled the moment "another amount" is below what's owed,
+  // not just rejected after the tap.
+  const otherAmountValue = parseAmount(ctx.view.otherAmount ?? '');
+  const submitDisabled =
+    choice === 'other' &&
+    status.key !== 'active' &&
+    (!Number.isFinite(otherAmountValue) || otherAmountValue < due.amount);
 
   return html`
     <div class="card stack-sm">
@@ -277,6 +294,7 @@ function payForm(policy, user, ctx, today) {
                 name="otherAmount"
                 inputmode="decimal"
                 placeholder="0.00"
+                value="${esc(ctx.view.otherAmount ?? '')}"
                 data-focus-key="otherAmount"
               />
               ${status.key !== 'active'
@@ -316,7 +334,7 @@ function payForm(policy, user, ctx, today) {
       <p class="disclosure">
         This is a demonstration. No card is charged and no payment is sent to a bank.
       </p>
-      ${button('Submit payment', { type: 'submit', block: true })}
+      ${button('Submit payment', { type: 'submit', block: true, disabled: submitDisabled })}
     </form>
   `;
 }
