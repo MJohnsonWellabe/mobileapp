@@ -545,6 +545,19 @@ by the earlier visual-QA screenshots and code inspection and didn't surface anyt
 weren't independently re-driven through the browser here. Worth a look in the next full
 `visual-qa-reviewer` pass rather than assumed permanently clean.
 
+**The Firestore emulator silently undercounts `healthDailyLog` under this seeder's write
+pattern; the real project doesn't.** After seeding the emulator repeatedly across a long
+session, Todd's health-log count read 56 instead of 82, capped at a fixed date regardless of
+how many times the emulator was restarted fresh and reseeded — this looked like a real bug
+in the credited-days logic. It wasn't: `buildSeed()`'s in-memory output has exactly the
+right 82 keys every time (checked directly), `seed-node.mjs` reported zero write failures,
+and seeding the real project once via the `--admin` service-account path (Part 1) produced
+the fully correct 82 documents, April 29 through August 5. This is a known class of Firestore
+emulator limitation under many concurrent writes into one large, newly-created collection —
+not a code defect. Anyone chasing a "missing health log days" report against the emulator
+specifically should re-check against `--admin --verify` on the real project before assuming
+the seed logic is wrong.
+
 ## Closing summary
 
 *(Filled in at the end of Phase 4: what's solid, what's intentionally thin and why, and
