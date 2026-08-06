@@ -158,13 +158,13 @@ function render(state) {
           href: 'pages/my-care.html',
           icon: 'stethoscope',
           title: 'MyCare',
-          status: 'Compare doctors, dentists and more',
+          status: 'Find care near you',
         })}
         ${sectionCard({
           href: 'pages/my-information.html',
           icon: 'person',
           title: 'MyInformation',
-          status: 'Your contact details and address',
+          status: 'Contact details and address',
         })}
       </div>
     </div>

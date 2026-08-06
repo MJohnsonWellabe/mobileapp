@@ -602,6 +602,45 @@ between Home and MyHealth (they'd drifted to two different phrasings), and a pas
 hint added to the login form to match the username field's ("Case doesn't matter.", without
 printing the actual demo password on screen).
 
+**Re-reviewed after those fixes: PASS.** All three previously-blocking findings confirmed
+resolved with no regressions (verified independently, including that the "you're all caught
+up" scoping wasn't over-corrected — Dennis and April's correct states still render
+correctly). Two more items fixed in the same pass:
+
+- **Home's bottom two hub-card subtitles truncated mid-word at 375px** ("Compare doctors,
+  dentists an…", "Your contact details and addr…") — correct at 430px, so purely a
+  too-long-for-the-column problem at the narrow breakpoint, and called out as "the one
+  change worth making if only one gets made" since it's on the first screen every member
+  sees. Shortened the copy itself ("Find care near you", "Contact details and address")
+  rather than allowing wrap, since `.section-card__status` is deliberately single-line
+  ellipsis elsewhere.
+- **The MyCare/MyMailbox chip strips and the admin tab strip still had no working scroll
+  cue**, despite two prior attempts. Root-caused properly this time: `mask-image` on a
+  scrolling flex container doesn't render at all in this Chromium build (confirmed via an
+  isolated test page — same story for a `::after` overlay positioned against the scrolling
+  element itself, which scrolls away with its own content since the scrolling element can't
+  also be the stationary frame for its own fade). Even after fixing the positioning with a
+  separate non-scrolling wrapper, a *color-matched* fade (transparent → white, transparent →
+  navy) turned out to be invisible for a different reason: fading dark text to white on an
+  already-white chip background produces no perceptible change at all — confirmed by
+  swapping the target color to an obviously-visible blue, which rendered the fade correctly
+  and proved the geometry was right all along. Replaced the whole approach with a plain
+  `inset box-shadow` directly on `.chips`/`.admin-tabs` (no wrapper divs, no pseudo-elements)
+  — a shadow darkens whatever's under it regardless of that content's own color, which is
+  exactly the property a same-color gradient fade doesn't have. Simpler than either previous
+  attempt and the only one of the three that's actually visible in a screenshot.
+
+**Left open, by choice, this round:** the streak-ring proportionality question (MyHealth's
+ring reads "goal complete" whenever current streak equals personal-best longest streak,
+which is a common case, not a rare one — a real design question about what the ring should
+encode, not a quick fix); the claim card's visual hierarchy (claim number is the boldest
+text on the card; the coverage name and outcome are smaller, and Debbie's denial reason
+doesn't appear on the card at all even though MyMailbox now surfaces it in full); the
+unread "New" pill's red carrying both "problem" and "merely unread" meanings; "past due" vs.
+"Lapsed" wording drift between Home and every other surface for the same policy state; and
+the disabled reward-tile's low-contrast, button-shaped-but-not-a-button styling. All are
+real and worth the next iteration's attention — see the closing summary below.
+
 ## Closing summary
 
 *(Filled in at the end of Phase 4: what's solid, what's intentionally thin and why, and

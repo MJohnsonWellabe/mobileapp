@@ -484,13 +484,14 @@
   display: flex;
   gap: var(--space-2);
   overflow-x: auto;
-  padding-bottom: var(--space-1);
+  padding: 0 0 var(--space-1);
   -webkit-overflow-scrolling: touch;
   /* A hard overflow-x clip with no cue reads as a broken layout rather than a
-     scrollable strip (visual QA finding). The fade softens the cut edge and
-     signals there's more without any JS scroll-position tracking. */
-  mask-image: linear-gradient(to right, black calc(100% - 32px), transparent);
-  -webkit-mask-image: linear-gradient(to right, black calc(100% - 32px), transparent);
+     scrollable strip (visual QA finding). An inset box-shadow reads reliably
+     regardless of what's underneath it — a color-matched gradient overlay
+     (tried first) was invisible in practice: fading dark text to white on an
+     already-white chip background produces no perceptible change at all. */
+  box-shadow: inset -20px 0 12px -12px rgba(20, 24, 27, 0.3);
 }
 .chip {
   flex: none;

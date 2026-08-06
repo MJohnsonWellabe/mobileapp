@@ -48,17 +48,17 @@
 }
 
 .admin-tabs {
-  display: flex;
-  gap: 0;
-  overflow-x: auto;
-  /* Same scroll cue as .chips (screens.css) — an unsignalled overflow-x clip
-     reads as a broken layout rather than a scrollable strip. */
-  mask-image: linear-gradient(to right, black calc(100% - 32px), transparent);
-  -webkit-mask-image: linear-gradient(to right, black calc(100% - 32px), transparent);
-  background: var(--color-primary-pressed);
   position: sticky;
   top: 56px;
   z-index: 19;
+  display: flex;
+  gap: 0;
+  overflow-x: auto;
+  background: var(--color-primary-pressed);
+  /* Same scroll cue as .chips (screens.css) — a color-matched gradient
+     overlay was invisible in practice, since it fades to the same color as
+     what's underneath. An inset shadow reads regardless of background. */
+  box-shadow: inset -20px 0 12px -12px rgba(0, 0, 0, 0.35);
 }
 .admin-tab {
   flex: none;
