@@ -4,6 +4,12 @@ rules_version = '2';
 // Wellabe member-app prototype — Firestore security rules
 // Project: see .firebaserc
 //
+// DEPLOYMENT: do not paste this into the Firebase console. Editing rules there
+// puts the console and this file out of sync, and the next push silently
+// overwrites your console edit. Change this file, push to main, and
+// .github/workflows/deploy-firebase-rules.yml publishes it after the unit tests
+// in tests/rules/ pass. Run those locally first with `npm test`.
+//
 // THREAT MODEL — READ THIS FIRST.
 // This app has NO Firebase Auth by deliberate design (docs/02-architecture.md
 // §"Why no real Firebase Auth"). request.auth is null on every single request.
