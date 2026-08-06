@@ -161,6 +161,23 @@ service cloud.firestore {
         && b.last4 is string && b.last4.matches('[0-9]{4}');
     }
 
+    // Four categories, each {paper: bool, email: bool}. Backs MyMailbox's delivery
+    // preferences (docs/04 §MyMailbox). Only the shape is enforced — "paper
+    // defaults to on" is a seeding and UI rule, not something rules can express.
+    function deliveryPrefsValid(p) {
+      return p is map
+        && p.keys().hasOnly(['bills', 'claims', 'policy', 'rewards'])
+        && p.keys().hasAll(['bills', 'claims', 'policy', 'rewards'])
+        && p.bills.keys().hasOnly(['paper', 'email'])
+        && p.bills.paper is bool && p.bills.email is bool
+        && p.claims.keys().hasOnly(['paper', 'email'])
+        && p.claims.paper is bool && p.claims.email is bool
+        && p.policy.keys().hasOnly(['paper', 'email'])
+        && p.policy.paper is bool && p.policy.email is bool
+        && p.rewards.keys().hasOnly(['paper', 'email'])
+        && p.rewards.paper is bool && p.rewards.email is bool;
+    }
+
     function userValid(d) {
       return d.keys().hasAll(['firstName', 'usernameLower', 'role', 'email',
                               'phone', 'preferredContactMethod', 'address',
@@ -168,7 +185,9 @@ service cloud.firestore {
         && d.keys().hasOnly(['firstName', 'usernameLower', 'role', 'gender',
                              'dob', 'email', 'phone', 'preferredContactMethod',
                              'address', 'cardOnFile', 'bankAccountOnFile',
-                             'createdAt'])
+                             'deliveryPreferences', 'createdAt'])
+        && (!('deliveryPreferences' in d) || d.deliveryPreferences == null
+            || deliveryPrefsValid(d.deliveryPreferences))
         && isText(d.firstName, 60)
         && isText(d.usernameLower, 60)
         && d.usernameLower == d.usernameLower.lower()
@@ -209,7 +228,8 @@ service cloud.firestore {
       allow update: if beforeSunset()
                     && userValid(request.resource.data)
                     && (onlyChanged(['email', 'phone', 'preferredContactMethod',
-                                     'address', 'cardOnFile', 'bankAccountOnFile'])
+                                     'address', 'cardOnFile', 'bankAccountOnFile',
+                                     'deliveryPreferences'])
                         || seedMode());
 
       allow delete: if beforeSunset() && seedMode();
@@ -609,7 +629,147 @@ service cloud.firestore {
     }
 
     // ---------------------------------------------------------------------
-    // 12. _config/{docId} — the seed switch. Console / Admin SDK only.
+    // 12. notices/{noticeId} — the insurer-to-member channel (docs/04 §MyMailbox)
+    //     Append-only from the client's side, with exactly one permitted mutation:
+    //     read false -> true. Everything else about a notice is fixed at creation,
+    //     which is what stops the member app rewriting its own correspondence.
+    //
+    //     Only EVENT notices live here. The "needs your attention" items are
+    //     derived at render time and deliberately never written — a persisted
+    //     condition notice goes stale and contradicts the data it came from.
+    // ---------------------------------------------------------------------
+
+    function noticeValid(d) {
+      return d.keys().hasAll(['userId', 'type', 'subject', 'body', 'read',
+                              'createdAt'])
+        && d.keys().hasOnly(['userId', 'type', 'subject', 'body', 'actionLabel',
+                             'actionTarget', 'documentId', 'read', 'createdAt'])
+        && isMemberId(d.userId)
+        && d.type in ['paymentReceived', 'paymentFailed', 'claimStatus',
+                      'coverage', 'rateNotice', 'rewards', 'welcome']
+        && isText(d.subject, 80)
+        && isText(d.body, 600)
+        && (!('actionLabel' in d) || d.actionLabel == null || isText(d.actionLabel, 60))
+        && (!('actionTarget' in d) || d.actionTarget == null || isText(d.actionTarget, 120))
+        && (!('documentId' in d) || d.documentId == null || isText(d.documentId, 80))
+        && d.read is bool
+        && d.createdAt is timestamp;
+    }
+
+    match /notices/{noticeId} {
+      allow read: if true;
+
+      // A client-written notice always lands unread. A feature module cannot file
+      // something the member never sees.
+      allow create: if beforeSunset()
+                    && noticeValid(request.resource.data)
+                    && (request.resource.data.read == false || seedMode());
+
+      allow update: if beforeSunset()
+                    && noticeValid(request.resource.data)
+                    && ((onlyChanged(['read']) && request.resource.data.read == true)
+                        || seedMode());
+
+      allow delete: if beforeSunset() && seedMode();
+    }
+
+    // ---------------------------------------------------------------------
+    // 13. documents/{documentId} — statements, packets, notices as artifacts
+    //     Rendered from this data by the viewer, never stored as binary files, so
+    //     storage.rules is untouched by MyMailbox.
+    //
+    //     Wellabe issues documents; members do not. The one exception is a claim
+    //     summary, which the app generates client-side when a claim reaches Paid
+    //     or Denied — so that create is allowed and every other one is not.
+    // ---------------------------------------------------------------------
+
+    function documentValid(d) {
+      return d.keys().hasAll(['userId', 'category', 'title', 'renderer',
+                              'payload', 'issuedDate', 'createdAt'])
+        && d.keys().hasOnly(['userId', 'policyId', 'category', 'title',
+                             'renderer', 'payload', 'issuedDate', 'createdAt'])
+        && isMemberId(d.userId)
+        && (!('policyId' in d) || d.policyId == null || isText(d.policyId, 80))
+        && d.category in ['policy', 'statement', 'claim', 'notice', 'tax']
+        && isText(d.title, 120)
+        && d.renderer in ['welcomePacket', 'outlineOfCoverage', 'premiumStatement',
+                          'claimSummary', 'rateNotice', 'premiumTaxSummary']
+        && d.payload is map && d.payload.keys().size() <= 30
+        && isYmd(d.issuedDate)
+        && d.createdAt is timestamp;
+    }
+
+    match /documents/{documentId} {
+      allow read: if true;
+
+      allow create: if beforeSunset()
+                    && documentValid(request.resource.data)
+                    && ((request.resource.data.category == 'claim'
+                         && request.resource.data.renderer == 'claimSummary')
+                        || seedMode());
+
+      allow update, delete: if beforeSunset() && seedMode();
+    }
+
+    // ---------------------------------------------------------------------
+    // 14. messageThreads/{threadId} — "Ask Wellabe a question"
+    //
+    //     KNOWN LIMIT, stated rather than implied: rules can check the size of the
+    //     messages array and the shape of its new last element, but they cannot
+    //     verify that the earlier elements were left untouched. A client can
+    //     therefore rewrite history in a thread, including a Wellabe reply. Same
+    //     posture as everywhere else in this project — no identity, fabricated
+    //     data only. Do not read the append checks below as tamper-proofing.
+    // ---------------------------------------------------------------------
+
+    function threadValid(d) {
+      return d.keys().hasAll(['userId', 'topic', 'subject', 'status', 'messages',
+                              'lastMessageAt', 'unreadByMember'])
+        && d.keys().hasOnly(['userId', 'topic', 'subject', 'relatedTo', 'status',
+                             'messages', 'autoAckedAt', 'lastMessageAt',
+                             'unreadByMember'])
+        && isMemberId(d.userId)
+        && d.topic in ['billing', 'claims', 'coverage', 'other']
+        && isText(d.subject, 120)
+        && d.status in ['open', 'answered', 'closed']
+        && d.messages is list
+        && d.messages.size() >= 1 && d.messages.size() <= 20
+        && (!('relatedTo' in d) || d.relatedTo == null
+            || (d.relatedTo is map && d.relatedTo.keys().hasOnly(['section', 'id'])))
+        && (!('autoAckedAt' in d) || d.autoAckedAt == null
+            || d.autoAckedAt is timestamp)
+        && d.lastMessageAt is timestamp
+        && d.unreadByMember is bool;
+    }
+
+    match /messageThreads/{threadId} {
+      allow read: if true;
+
+      // A member opens a thread with exactly their own first message. The app can
+      // never manufacture a thread that already contains a Wellabe reply.
+      allow create: if beforeSunset()
+                    && threadValid(request.resource.data)
+                    && ((request.resource.data.messages.size() == 1
+                         && request.resource.data.messages[0].from == 'member'
+                         && request.resource.data.status == 'open'
+                         && request.resource.data.unreadByMember == false)
+                        || seedMode());
+
+      allow update: if beforeSunset()
+                    && threadValid(request.resource.data)
+                    && ((onlyChanged(['messages', 'lastMessageAt'])
+                         && request.resource.data.messages.size()
+                              == resource.data.messages.size() + 1
+                         && request.resource.data
+                              .messages[resource.data.messages.size()].from == 'member')
+                        || onlyChanged(['unreadByMember'])
+                        || seedMode());
+
+      allow delete: if beforeSunset() && seedMode();
+    }
+
+    // ---------------------------------------------------------------------
+    // 15. _config/{docId} — the seed switch. Console / Admin SDK only.
     //     A rules-internal get() ignores these rules, so seedMode() still works
     //     while no client can read the flag, let alone flip it.
     // ---------------------------------------------------------------------

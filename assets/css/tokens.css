@@ -1,0 +1,90 @@
+/* Design tokens — the single source for every colour, size and spacing value in the
+   app. Derived from docs/01-design-system.md; if a value here and a value there
+   disagree, docs/01 is right and this file is wrong.
+
+   No component may introduce a literal colour, font size, or radius. */
+
+:root {
+  /* ---- Brand -------------------------------------------------------------
+     Yellow is a BACKGROUND colour and nothing else. It measures 1.48:1 against
+     --color-background, so it can never carry text, a border, or a status
+     indicator. It is legible only underneath --color-text-primary (10.6:1),
+     which is exactly how Wellabe's own portal uses it. */
+  --color-brand-yellow: #edc319;
+  --color-brand-yellow-tint: #fdf6dc;
+  --color-brand-teal: #15a5bb; /* 2.58:1 — decorative fills only, never a control */
+
+  /* ---- Actions -----------------------------------------------------------
+     Deepened from the brand teal until it passes AA both as text on the app
+     background (5.67:1) and as a surface under white text (6.48:1). */
+  --color-primary: #076874;
+  --color-primary-pressed: #04525c;
+  --color-primary-tint: #e4eff1;
+
+  /* ---- Status ------------------------------------------------------------
+     Warning is a burnt orange, deliberately. An amber warning would sit a few
+     degrees of hue from the brand yellow and read as decoration, not an alert. */
+  --color-success: #0f7a4a;
+  --color-success-tint: #e3f3ea;
+  --color-warning: #a34a06;
+  --color-warning-tint: #fbeade;
+  --color-danger: #a81e16;
+  --color-danger-tint: #fbe6e4;
+
+  /* ---- Surfaces ---------------------------------------------------------- */
+  --color-surface: #ffffff;
+  --color-surface-sunken: #ece7e2;
+  --color-background: #f3efec;
+  --color-text-primary: #14181b;
+  --color-text-secondary: #55606b;
+  --color-text-on-dark: #ffffff;
+  --color-border: #e2ddd7;
+  --color-border-strong: #c7bfb6;
+  --color-ink: #14181b; /* admin chrome and dark panels */
+
+  /* ---- Type -------------------------------------------------------------- */
+  --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
+    sans-serif;
+  --text-xs: 13px;
+  --text-sm: 15px;
+  --text-base: 17px; /* floor for body copy — deliberate, not an oversight */
+  --text-lg: 20px;
+  --text-xl: 24px;
+  --text-2xl: 30px;
+  --text-3xl: 38px;
+  --leading-body: 1.5;
+  --leading-heading: 1.25;
+  --weight-regular: 400;
+  --weight-medium: 600;
+  --weight-bold: 700;
+
+  /* ---- Space ------------------------------------------------------------- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* ---- Shape ------------------------------------------------------------- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-pill: 999px;
+  --shadow-card: 0 1px 2px rgba(20, 24, 27, 0.06), 0 1px 8px rgba(20, 24, 27, 0.04);
+  --shadow-raised: 0 4px 16px rgba(20, 24, 27, 0.12);
+
+  /* ---- Navigation & targets ---------------------------------------------- */
+  --nav-height: 64px;
+  --nav-icon-size: 26px;
+  --nav-label-size: 12px;
+  --topbar-height: 56px;
+  --tap-target-min: 48px; /* above WCAG 2.2 AA and above the common 44px */
+  --tap-target-spacing: 8px;
+  --content-max: 560px;
+
+  --focus-ring: 0 0 0 3px #ffffff, 0 0 0 5px var(--color-primary);
+}

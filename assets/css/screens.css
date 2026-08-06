@@ -1,0 +1,264 @@
+/* Screen-level layout. Components live in components.css; this file is only for
+   arrangements that belong to one screen and would not be reused.
+
+   Same rule applies: every value comes from tokens.css. */
+
+/* =========================================================== login ======== */
+
+.login-body {
+  background: var(--color-background);
+}
+
+.login {
+  max-width: 420px;
+  margin: 0 auto;
+  padding: var(--space-8) var(--space-4) var(--space-10);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.login__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-8);
+}
+.login__mark {
+  color: var(--color-brand-yellow);
+  display: block;
+  width: 52px;
+}
+.login__mark svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.login__wordmark {
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.03em;
+}
+
+.login__heading {
+  font-size: var(--text-2xl);
+  margin-bottom: var(--space-1);
+}
+.login__sub {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-6);
+}
+
+.login__art {
+  color: var(--color-text-primary);
+  opacity: 0.4;
+  margin: var(--space-8) auto var(--space-6);
+  max-width: 260px;
+  width: 100%;
+}
+.login__art svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.login__demo {
+  margin-top: auto;
+  text-align: center;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ============================================================ home ======== */
+
+.home-greeting {
+  margin-bottom: var(--space-1);
+  font-size: var(--text-2xl);
+}
+.home-sub {
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-5);
+}
+
+/* The Today card is pinned above everything else: completing the daily habit
+   should take zero navigation (docs/01 §Navigation). */
+.today-card {
+  background: var(--color-brand-yellow-tint);
+  border: 1px solid var(--color-brand-yellow);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+}
+.today-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+.today-card__copy {
+  flex: 1;
+  min-width: 0;
+}
+.today-card__title {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+}
+.today-card__meta {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+.challenge-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.challenge {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: var(--tap-target-min);
+  padding: var(--space-2) 0;
+  background: none;
+  border: 0;
+  border-top: 1px solid var(--color-brand-yellow);
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+}
+.challenge__box {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 2px solid var(--color-text-secondary);
+  background: var(--color-surface);
+  color: transparent;
+}
+.challenge__box svg {
+  width: 20px;
+  height: 20px;
+}
+.challenge[aria-pressed='true'] .challenge__box {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: var(--color-text-on-dark);
+}
+.challenge[aria-pressed='true'] .challenge__label {
+  text-decoration: line-through;
+  color: var(--color-text-secondary);
+}
+.challenge__label {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Streak ring — brand yellow fill, which is legal because it is a shape and not
+   text or a status indicator. */
+.ring {
+  position: relative;
+  flex: none;
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+}
+.ring svg {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+}
+.ring__track {
+  fill: none;
+  stroke: rgba(20, 24, 27, 0.12);
+  stroke-width: 7;
+}
+.ring__value {
+  fill: none;
+  stroke: var(--color-brand-yellow);
+  stroke-width: 7;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.3s ease;
+}
+.ring__label {
+  position: relative;
+  text-align: center;
+  line-height: 1.1;
+}
+.ring__number {
+  display: block;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+}
+.ring__unit {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+@media (prefers-reduced-motion: reduce) {
+  .ring__value {
+    transition: none;
+  }
+}
+
+.section-grid {
+  display: grid;
+  gap: var(--space-3);
+}
+
+/* =========================================================== "more" ======= */
+
+.more-list {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+.more-row {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 64px;
+  padding: var(--space-3) var(--space-4);
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+.more-row:last-child {
+  border-bottom: 0;
+}
+.more-row__icon {
+  flex: none;
+  color: var(--color-primary);
+  display: grid;
+  place-items: center;
+  width: 28px;
+}
+.more-row__body {
+  flex: 1;
+  min-width: 0;
+}
+.more-row__label {
+  font-weight: var(--weight-medium);
+}
+.more-row__status {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+.more-row__chevron {
+  color: var(--color-text-secondary);
+  flex: none;
+}
+.more-row--danger .more-row__icon,
+.more-row--danger .more-row__label {
+  color: var(--color-danger);
+}

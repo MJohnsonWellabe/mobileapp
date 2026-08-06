@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <!-- No user-scalable=no. Pinch-zoom must work everywhere (docs/01). -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Log in — Wellabe</title>
+    <meta name="description" content="Wellabe member app prototype." />
+    <link rel="icon" href="assets/img/wellabe-mark.svg" />
+    <link rel="stylesheet" href="assets/css/tokens.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+    <link rel="stylesheet" href="assets/css/screens.css" />
+  </head>
+  <body class="login-body">
+    <main class="login">
+      <div class="login__brand">
+        <span class="login__mark" id="mark" aria-hidden="true"></span>
+        <span class="login__wordmark">wellabe</span>
+      </div>
+
+      <h1 class="login__heading">Welcome back</h1>
+      <p class="login__sub">Sign in to see your coverage, claims, and rewards.</p>
+
+      <form class="card stack" id="login-form" novalidate>
+        <div class="field">
+          <label class="field__label" for="username">Username</label>
+          <input
+            class="input"
+            id="username"
+            name="username"
+            type="text"
+            autocomplete="username"
+            autocapitalize="none"
+            spellcheck="false"
+            required
+          />
+          <p class="field__hint">Your first name.</p>
+        </div>
+
+        <div class="field">
+          <label class="field__label" for="password">Password</label>
+          <input
+            class="input"
+            id="password"
+            name="password"
+            type="password"
+            autocomplete="current-password"
+            required
+          />
+        </div>
+
+        <div id="login-error" role="alert" aria-live="assertive"></div>
+
+        <button class="btn btn--primary btn--block" type="submit" id="submit">Log In</button>
+      </form>
+
+      <div class="login__art" id="art" aria-hidden="true"></div>
+
+      <p class="login__demo">
+        This is a demonstration app built for Wellabe. All member information in it is
+        made up.
+      </p>
+    </main>
+
+    <script type="module" src="assets/js/screens/login.js"></script>
+  </body>
+</html>

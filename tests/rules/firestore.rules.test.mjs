@@ -572,3 +572,217 @@ describe("unmodelled collections are denied by default", () => {
     await assertFails(setDoc(doc(db, "payment/oops"), { amount: 1 }));
   });
 });
+
+// ---------------------------------------------------------------------------
+// MyMailbox collections (docs/04 §MyMailbox), added in the Phase 0 gap fill.
+// ---------------------------------------------------------------------------
+
+const validNotice = (over = {}) => ({
+  userId: "user-dave",
+  type: "paymentReceived",
+  subject: "Payment received — $148.50",
+  body: "Thank you. We received your payment.",
+  actionLabel: "View your coverage",
+  actionTarget: "coverages",
+  documentId: null,
+  read: false,
+  createdAt: new Date("2026-08-01"),
+  ...over,
+});
+
+const validThread = (over = {}) => ({
+  userId: "user-debbie",
+  topic: "claims",
+  subject: "About claim CLM-2026-00418",
+  relatedTo: { section: "claims", id: "claim-debbie-ci" },
+  status: "open",
+  messages: [{ from: "member", body: "Why was this denied?", sentAt: new Date("2026-08-01") }],
+  autoAckedAt: new Date("2026-08-01"),
+  lastMessageAt: new Date("2026-08-01"),
+  unreadByMember: false,
+  ...over,
+});
+
+const validDocument = (over = {}) => ({
+  userId: "user-dave",
+  policyId: "policy-dave-medsupp",
+  category: "statement",
+  title: "2025 Premium Statement — Medicare Supplement Plan G",
+  renderer: "premiumStatement",
+  payload: { year: "2025", total: "1782.00" },
+  issuedDate: "2026-01-15",
+  createdAt: new Date("2026-01-15"),
+  ...over,
+});
+
+describe("notices — read is a one-way flip and nothing else is editable", () => {
+  before(async () => {
+    await setSeedMode(false);
+  });
+
+  test("a feature module may file an unread notice", async () => {
+    await assertSucceeds(setDoc(doc(db, "notices/n-1"), validNotice()));
+  });
+
+  test("a notice cannot be created already read — the member must actually see it", async () => {
+    await assertFails(setDoc(doc(db, "notices/n-2"), validNotice({ read: true })));
+  });
+
+  test("opening a notice marks it read", async () => {
+    await seedRaw({ "notices/n-3": validNotice() });
+    await assertSucceeds(updateDoc(doc(db, "notices/n-3"), { read: true }));
+  });
+
+  test("a read notice cannot be flipped back to unread", async () => {
+    await seedRaw({ "notices/n-4": validNotice({ read: true }) });
+    await assertFails(updateDoc(doc(db, "notices/n-4"), { read: false }));
+  });
+
+  test("the body of a notice cannot be rewritten", async () => {
+    await seedRaw({ "notices/n-5": validNotice() });
+    await assertFails(updateDoc(doc(db, "notices/n-5"), { subject: "Something else" }));
+  });
+
+  test("an unknown notice type is rejected", async () => {
+    await assertFails(setDoc(doc(db, "notices/n-6"), validNotice({ type: "marketing" })));
+  });
+});
+
+describe("documents — Wellabe issues them, members do not", () => {
+  before(async () => {
+    await setSeedMode(false);
+  });
+
+  test("a client cannot mint itself a premium statement", async () => {
+    await assertFails(setDoc(doc(db, "documents/d-1"), validDocument()));
+  });
+
+  test("the app may generate a claim summary, which is the one exception", async () => {
+    await assertSucceeds(
+      setDoc(
+        doc(db, "documents/d-2"),
+        validDocument({
+          category: "claim",
+          renderer: "claimSummary",
+          title: "Claim summary — CLM-2026-00418",
+        }),
+      ),
+    );
+  });
+
+  test("a claim-category document may not use some other renderer", async () => {
+    await assertFails(
+      setDoc(doc(db, "documents/d-3"), validDocument({ category: "claim" })),
+    );
+  });
+
+  test("seed mode may write any document", async () => {
+    await setSeedMode(true);
+    await assertSucceeds(setDoc(doc(db, "documents/d-4"), validDocument()));
+    await setSeedMode(false);
+  });
+});
+
+describe("messageThreads — a member cannot put words in Wellabe's mouth", () => {
+  before(async () => {
+    await setSeedMode(false);
+  });
+
+  test("a member opens a thread with their own single message", async () => {
+    await assertSucceeds(setDoc(doc(db, "messageThreads/t-1"), validThread()));
+  });
+
+  test("a thread cannot be created already carrying a Wellabe reply", async () => {
+    await assertFails(
+      setDoc(
+        doc(db, "messageThreads/t-2"),
+        validThread({
+          messages: [
+            { from: "member", body: "Why was this denied?", sentAt: new Date("2026-08-01") },
+            { from: "wellabe", body: "Approved, actually.", sentAt: new Date("2026-08-02") },
+          ],
+        }),
+      ),
+    );
+  });
+
+  test("a thread cannot open with a message attributed to Wellabe", async () => {
+    await assertFails(
+      setDoc(
+        doc(db, "messageThreads/t-3"),
+        validThread({
+          messages: [{ from: "wellabe", body: "We approved it.", sentAt: new Date("2026-08-01") }],
+        }),
+      ),
+    );
+  });
+
+  test("the member may append their own follow-up", async () => {
+    await seedRaw({ "messageThreads/t-4": validThread() });
+    await assertSucceeds(
+      updateDoc(doc(db, "messageThreads/t-4"), {
+        messages: [
+          { from: "member", body: "Why was this denied?", sentAt: new Date("2026-08-01") },
+          { from: "member", body: "Any update?", sentAt: new Date("2026-08-03") },
+        ],
+        lastMessageAt: new Date("2026-08-03"),
+      }),
+    );
+  });
+
+  test("the member cannot append a reply from Wellabe", async () => {
+    await seedRaw({ "messageThreads/t-5": validThread() });
+    await assertFails(
+      updateDoc(doc(db, "messageThreads/t-5"), {
+        messages: [
+          { from: "member", body: "Why was this denied?", sentAt: new Date("2026-08-01") },
+          { from: "wellabe", body: "Approved!", sentAt: new Date("2026-08-03") },
+        ],
+        lastMessageAt: new Date("2026-08-03"),
+      }),
+    );
+  });
+
+  test("the member cannot mark their own thread answered", async () => {
+    await seedRaw({ "messageThreads/t-6": validThread() });
+    await assertFails(updateDoc(doc(db, "messageThreads/t-6"), { status: "answered" }));
+  });
+});
+
+describe("users — deliveryPreferences is editable, and shape-checked", () => {
+  const prefs = {
+    bills: { paper: true, email: false },
+    claims: { paper: true, email: true },
+    policy: { paper: true, email: false },
+    rewards: { paper: true, email: false },
+  };
+
+  before(async () => {
+    await setSeedMode(false);
+    await seedRaw({ "users/user-prefs": validUser({ deliveryPreferences: prefs }) });
+  });
+
+  test("a member may change their delivery preferences", async () => {
+    await assertSucceeds(
+      updateDoc(doc(db, "users/user-prefs"), {
+        deliveryPreferences: { ...prefs, bills: { paper: false, email: true } },
+      }),
+    );
+  });
+
+  test("a malformed preferences map is rejected", async () => {
+    await assertFails(
+      updateDoc(doc(db, "users/user-prefs"), {
+        deliveryPreferences: { ...prefs, bills: { paper: "yes", email: true } },
+      }),
+    );
+  });
+
+  test("an extra preference category is rejected", async () => {
+    await assertFails(
+      updateDoc(doc(db, "users/user-prefs"), {
+        deliveryPreferences: { ...prefs, marketing: { paper: true, email: true } },
+      }),
+    );
+  });
+});
