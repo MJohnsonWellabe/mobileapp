@@ -1,0 +1,398 @@
+// MyClaims — submit a claim with a photo, and track it to resolution.
+//
+// The tracker is modelled on the "pizza tracker" pattern the brief asks for:
+// Intake -> Processing -> Reviewing -> Paid, with each completed stage carrying its
+// real timestamp from statusHistory. Denied is a distinct terminal state, not Paid
+// recoloured — a member should never have to read a colour to work out what
+// happened.
+//
+// No UI path here can move a claim backwards or skip a stage. That is also enforced
+// in firestore.rules by claimAdvance() and historyAppended(), so the guardrail
+// survives someone poking at the console.
+
+import { page, param } from './_page.js';
+import {
+  subscribeClaims,
+  subscribePolicies,
+  createClaim,
+  updateClaim,
+  serverTimestamp,
+  Timestamp,
+} from '../data.js';
+import { storage } from '../firebase-init.js';
+import { storageRef, uploadBytes, getDownloadURL } from '../../vendor/firebase.js';
+import { formatDate, formatDateTime, formatMoney, PRODUCT_LABELS, toDate } from '../format.js';
+import { html, esc, dataRow, button, toast, on, illustration, emptyState } from '../ui.js';
+import { icons } from '../icons.js';
+import { noticeClaimSubmitted } from '../notices.js';
+
+const STAGES = ['Intake', 'Processing', 'Reviewing', 'Paid'];
+
+const STAGE_HELP = {
+  Intake: 'We have your claim and are getting it ready for review.',
+  Processing: 'A claims specialist has picked it up.',
+  Reviewing: 'This is the last stage before a decision.',
+  Paid: 'Your payment is on its way.',
+};
+
+page({
+  title: 'MyClaims',
+  tab: 'claims',
+  ready: ['claims', 'policies'],
+  illustrations: ['thinking-at-computer', 'embrace'],
+
+  subscribe(session, update, ctx) {
+    ctx.view.openClaim = param('id');
+    subscribePolicies(session.userId, (policies) => update({ policies }));
+    subscribeClaims(session.userId, (claims) => update({ claims }));
+  },
+
+  events(app, ctx, getState) {
+    on(app, 'click', '[data-open]', (event, el) => {
+      ctx.view.openClaim = el.dataset.open;
+      ctx.view.mode = null;
+      window.scrollTo(0, 0);
+      ctx.repaint();
+    });
+
+    on(app, 'click', '[data-action="back"]', () => {
+      ctx.view.openClaim = null;
+      ctx.view.mode = null;
+      ctx.view.error = null;
+      ctx.repaint();
+    });
+
+    on(app, 'click', '[data-action="new"]', () => {
+      ctx.view.mode = 'new';
+      ctx.view.openClaim = null;
+      window.scrollTo(0, 0);
+      ctx.repaint();
+    });
+
+    on(app, 'submit', 'form[data-new-claim]', (event, form) => submitClaim(event, form, ctx, getState));
+  },
+
+  render(state, ctx) {
+    const { claims, policies } = state;
+
+    if (ctx.view.mode === 'new') return newClaimForm(policies, ctx);
+    if (ctx.view.submitted) return submittedView(ctx.view.submitted);
+
+    if (ctx.view.openClaim) {
+      const claim = claims.find((c) => c.id === ctx.view.openClaim);
+      if (claim) return detailView(claim, policies);
+    }
+    return listView(claims, policies);
+  },
+});
+
+/* ------------------------------------------------------------- views ----- */
+
+function listView(claims, policies) {
+  return html`
+    ${claims.length
+      ? html`<div class="stack-sm">
+          <h2 class="section-heading">
+            ${claims.length === 1 ? 'Your claim' : `Your claims (${claims.length})`}
+          </h2>
+          ${claims.map((claim) => claimRow(claim, policies))}
+        </div>`
+      : emptyState({
+          art: 'thinking-at-computer',
+          title: 'No claims yet',
+          body: "When you need to file one, it takes a couple of minutes and you can follow it right here.",
+        })}
+
+    <button class="btn btn--primary btn--block" data-action="new">
+      ${icons.plus()} File a new claim
+    </button>
+  `;
+}
+
+function claimRow(claim, policies) {
+  const policy = policies.find((p) => p.id === claim.policyId);
+  const s = statusPill(claim.status);
+  return html`<button class="card stack-sm" data-open="${esc(claim.id)}" style="width:100%;text-align:left;cursor:pointer;font:inherit;color:inherit">
+    <div style="display:flex;justify-content:space-between;gap:var(--space-3);align-items:flex-start">
+      <div>
+        <div class="card__meta">${esc(policy ? PRODUCT_LABELS[policy.product] : PRODUCT_LABELS[claim.product])}</div>
+        <div class="card__title">${esc(claim.claimNumber)}</div>
+      </div>
+      <span class="pill pill--${s.tone}">${icons[s.icon]()}${esc(s.label)}</span>
+    </div>
+    <div class="card__meta">Filed ${formatDate(claim.submittedAt)}</div>
+  </button>`;
+}
+
+function detailView(claim, policies) {
+  const policy = policies.find((p) => p.id === claim.policyId);
+  const denied = claim.status === 'Denied';
+
+  return html`
+    <div class="card stack-sm">
+      <div class="card__meta">${esc(policy ? PRODUCT_LABELS[policy.product] : PRODUCT_LABELS[claim.product])}</div>
+      <h2>${esc(claim.claimNumber)}</h2>
+      <p>${esc(claim.description)}</p>
+    </div>
+
+    ${denied ? deniedTracker(claim) : tracker(claim)}
+
+    ${claim.status === 'Paid'
+      ? html`<div class="card stack-sm">
+          <span class="pill pill--success">${icons.checkCircle()}Paid</span>
+          <h3 class="card__title">${formatMoney(claim.paidAmount ?? 0)} has been paid</h3>
+          <p class="card__meta">
+            Sent to you on ${formatDate(stageDate(claim, 'Paid'))}. Allow a few business days
+            for it to arrive.
+          </p>
+        </div>`
+      : ''}
+
+    <div class="card">
+      <h3 class="section-heading">Claim details</h3>
+      ${dataRow('Filed', formatDate(claim.submittedAt))}
+      ${policy ? dataRow('Policy', policy.policyNumber) : ''}
+      ${claim.photoUrl
+        ? dataRow('Photo', '', {
+            valueHtml: `<a href="${esc(claim.photoUrl)}" target="_blank" rel="noopener">View attachment</a>`,
+          })
+        : dataRow('Photo', 'None attached')}
+    </div>
+  `;
+}
+
+/** The pizza tracker. Past stages are marked complete with their real timestamp;
+ *  the current stage is the visually loudest thing on the screen. */
+function tracker(claim) {
+  const index = STAGES.indexOf(claim.status);
+  return html`<div class="card">
+    <h3 class="section-heading">Where your claim is</h3>
+    <ol class="tracker">
+      ${STAGES.map((stage, i) => {
+        const state = i < index ? 'done' : i === index ? 'current' : 'todo';
+        const when = stageDate(claim, stage);
+        return html`<li class="tracker__step tracker__step--${state}">
+          <span class="tracker__marker" aria-hidden="true">
+            ${state === 'done' ? icons.check() : state === 'current' ? icons.clock() : ''}
+          </span>
+          <span class="tracker__body">
+            <span class="tracker__label"
+              >${esc(stage)}${state === 'current' ? ' — where it is now' : ''}</span
+            >
+            <span class="tracker__meta"
+              >${when ? formatDateTime(when) : state === 'current' ? esc(STAGE_HELP[stage]) : 'Not yet'}</span
+            >
+            ${state === 'current' && when
+              ? html`<span class="tracker__meta">${esc(STAGE_HELP[stage])}</span>`
+              : ''}
+          </span>
+        </li>`;
+      })}
+    </ol>
+  </div>`;
+}
+
+/** A distinct end state, not Paid recoloured. The reason and the next step are the
+ *  point of this screen — a bare "Denied" is a defect (docs/04 §MyClaims). */
+function deniedTracker(claim) {
+  const reached = ['Intake', 'Processing', 'Reviewing'];
+  return html`
+    <div class="card">
+      <h3 class="section-heading">Where your claim is</h3>
+      <ol class="tracker">
+        ${reached.map(
+          (stage) => html`<li class="tracker__step tracker__step--done">
+            <span class="tracker__marker" aria-hidden="true">${icons.check()}</span>
+            <span class="tracker__body">
+              <span class="tracker__label">${esc(stage)}</span>
+              <span class="tracker__meta">${formatDateTime(stageDate(claim, stage))}</span>
+            </span>
+          </li>`,
+        )}
+        <li class="tracker__step tracker__step--denied">
+          <span class="tracker__marker" aria-hidden="true">${icons.close()}</span>
+          <span class="tracker__body">
+            <span class="tracker__label">Denied</span>
+            <span class="tracker__meta">${formatDateTime(stageDate(claim, 'Denied'))}</span>
+          </span>
+        </li>
+      </ol>
+    </div>
+
+    <div class="card stack-sm">
+      <span class="pill pill--danger">${icons.alert()}Denied</span>
+      <h3 class="card__title">Why this claim was denied</h3>
+      <p>${esc(claim.deniedReason ?? '')}</p>
+    </div>
+
+    <div class="card stack-sm">
+      <div class="illustration" style="max-width:180px;opacity:.5" aria-hidden="true">
+        ${illustration('embrace')}
+      </div>
+      <h3 class="card__title">This does not have to be the end of it</h3>
+      <p>
+        If you have something that would change our decision, send it to us and a person
+        will look at this claim again.
+      </p>
+      <a
+        class="btn btn--primary btn--block"
+        href="my-mailbox.html?compose=claims&amp;claim=${esc(claim.id)}&amp;subject=${encodeURIComponent(
+          `Request a review — ${claim.claimNumber}`,
+        )}"
+        >${icons.send()} Request a review</a
+      >
+    </div>
+  `;
+}
+
+function newClaimForm(policies, ctx) {
+  return html`
+    <form class="card stack" data-new-claim>
+      <h2>File a claim</h2>
+
+      ${policies.length > 1
+        ? html`<div>
+            <span class="field__label">Which coverage is this for?</span>
+            ${policies.map(
+              (p, i) => html`<label class="choice">
+                <input type="radio" name="policyId" value="${esc(p.id)}" ${i === 0 ? 'checked' : ''} />
+                <span class="choice__body">
+                  <span class="choice__title">${esc(PRODUCT_LABELS[p.product])}</span>
+                  <span class="choice__meta">${esc(p.planName)}</span>
+                </span>
+              </label>`,
+            )}
+          </div>`
+        : html`<input type="hidden" name="policyId" value="${esc(policies[0]?.id ?? '')}" />
+            <p class="card__meta">
+              For your ${esc(policies[0] ? PRODUCT_LABELS[policies[0].product] : 'coverage')} policy.
+            </p>`}
+
+      <label class="field">
+        <span class="field__label">What happened?</span>
+        <textarea
+          class="textarea"
+          name="description"
+          rows="5"
+          required
+          placeholder="For example: two nights in hospital after a fall at home."
+          data-focus-key="description"
+        ></textarea>
+        <span class="field__hint">A sentence or two is plenty. We'll come back to you if we need more.</span>
+      </label>
+
+      <label class="field">
+        <span class="field__label">Add a photo of your bill or receipt</span>
+        <input class="input" type="file" name="photo" accept="image/*" capture="environment" />
+        <span class="field__hint">Optional, but it usually speeds things up.</span>
+      </label>
+
+      ${ctx.view.error
+        ? html`<p class="field__error">${icons.alert()}<span>${esc(ctx.view.error)}</span></p>`
+        : ''}
+      <p class="disclosure">This is a demonstration. Nothing is sent to a real claims team.</p>
+      ${button('Submit claim', { type: 'submit', block: true })}
+    </form>
+  `;
+}
+
+function submittedView(claim) {
+  return html`<div class="card stack">
+    <span class="pill pill--success">${icons.checkCircle()}Claim received</span>
+    <h2>We have your claim</h2>
+    <p>
+      Your claim number is <strong>${esc(claim.claimNumber)}</strong>. It's at intake now —
+      we'll send you a notice here each time it moves to a new stage.
+    </p>
+    <button class="btn btn--primary btn--block" data-open="${esc(claim.id)}">
+      Track this claim
+    </button>
+  </div>`;
+}
+
+/* ----------------------------------------------------------- submit ------ */
+
+async function submitClaim(event, form, ctx, getState) {
+  event.preventDefault();
+  const { policies } = getState();
+  const session = ctx.session;
+  const policyId = form.policyId?.value;
+  const policy = policies.find((p) => p.id === policyId);
+  const description = form.description.value.trim();
+
+  if (!policy) {
+    ctx.view.error = 'Please choose which coverage this claim is for.';
+    return ctx.repaint();
+  }
+  if (description.length < 5) {
+    ctx.view.error = 'Please tell us briefly what happened.';
+    return ctx.repaint();
+  }
+
+  const claimId = `claim-${session.userId.replace('user-', '')}-${Date.now()}`;
+  const claimNumber = `CLM-${new Date().getFullYear()}-${String(Math.floor(10000 + Math.random() * 89999))}`;
+  const now = Timestamp.now();
+
+  try {
+    // A claim may only ever be created at Intake with a one-entry history — the
+    // rules reject anything else from a client, so this is the only legal shape.
+    await createClaim(claimId, {
+      userId: session.userId,
+      policyId: policy.id,
+      product: policy.product,
+      claimNumber,
+      description,
+      status: 'Intake',
+      statusHistory: [{ status: 'Intake', timestamp: now }],
+      submittedAt: now,
+    });
+
+    const file = form.photo?.files?.[0];
+    if (file) {
+      try {
+        // Unique file name per upload: storage.rules makes a claim photo
+        // write-once, so an overwrite is rejected rather than silently replacing
+        // evidence.
+        const safe = file.name.replace(/[^A-Za-z0-9._-]/g, '_').slice(-60);
+        const ref = storageRef(storage, `claims/${session.userId}/${claimId}/${Date.now()}-${safe}`);
+        await uploadBytes(ref, file);
+        await updateClaim(claimId, { photoUrl: await getDownloadURL(ref) });
+      } catch (uploadErr) {
+        // The claim itself is filed; losing the attachment should not lose the
+        // claim. Tell the member the truth rather than failing the whole thing.
+        console.error(uploadErr);
+        toast("Your claim was filed, but we couldn't attach the photo.", { tone: 'error' });
+      }
+    }
+
+    await noticeClaimSubmitted({ userId: session.userId, claim: { id: claimId, claimNumber } });
+
+    ctx.view.submitted = { id: claimId, claimNumber };
+    ctx.view.mode = null;
+    ctx.view.error = null;
+    window.scrollTo(0, 0);
+    ctx.repaint();
+  } catch (err) {
+    console.error(err);
+    ctx.view.error = "We couldn't file that claim. Please try again.";
+    ctx.repaint();
+  }
+}
+
+/* ------------------------------------------------------------ helpers ---- */
+
+function statusPill(status) {
+  return {
+    Intake: { label: 'Intake', tone: 'info', icon: 'clock' },
+    Processing: { label: 'Processing', tone: 'info', icon: 'clock' },
+    Reviewing: { label: 'In review', tone: 'warning', icon: 'clock' },
+    Paid: { label: 'Paid', tone: 'success', icon: 'checkCircle' },
+    Denied: { label: 'Denied', tone: 'danger', icon: 'alert' },
+  }[status];
+}
+
+function stageDate(claim, stage) {
+  const entry = (claim.statusHistory ?? []).find((s) => s.status === stage);
+  return entry ? toDate(entry.timestamp) : null;
+}
+

@@ -8,7 +8,7 @@
 // that actually matter (an open text field, and scroll position).
 
 import { requireMember } from '../auth.js';
-import { renderShell, watchMailboxBadge } from '../app-shell.js';
+import { renderShell, watchMailboxBadge, setBackHandler } from '../app-shell.js';
 import { mount, on, skeletonList, errorState } from '../ui.js';
 
 const BASE = '../';
@@ -24,7 +24,7 @@ const BASE = '../';
  * @param {(app, ctx) => void} [opts.events]  delegated handlers, wired once
  * @param {string[]} [opts.illustrations]  preloaded before first paint
  */
-export function page({ title, tab, render, subscribe, ready, events, illustrations = [] }) {
+export function page({ title, tab, render, subscribe, ready, events, illustrations = [], subViewKeys = ['mode', 'openClaim', 'openPolicy', 'done', 'submitted', 'locked', 'openNotice', 'openDocument', 'openThread'] }) {
   const session = requireMember(BASE);
   if (!session) return;
 
@@ -95,6 +95,18 @@ export function page({ title, tab, render, subscribe, ready, events, illustratio
       preloadIllustrations(illustrations, `${BASE}assets/img/illustrations/`).then(paint),
     );
   }
+
+  // Screens declare which view keys mean "a sub-view is open"; the shell's Back
+  // then closes the sub-view instead of leaving the section.
+  setBackHandler(() => {
+    const open = subViewKeys.some((k) => ctx.view[k]);
+    if (!open) return false;
+    for (const k of subViewKeys) ctx.view[k] = null;
+    ctx.view.error = null;
+    window.scrollTo(0, 0);
+    paint();
+    return true;
+  });
 
   if (events) events(app, ctx, () => state);
   on(app, 'click', '[data-action="retry"]', () => location.reload());

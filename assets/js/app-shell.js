@@ -93,6 +93,10 @@ export function renderShell({ title, tab, base = '', back, noNav = false } = {})
   });
 
   document.querySelector('[data-shell="back"]')?.addEventListener('click', () => {
+    // A screen with an open sub-view (a claim detail, an ID card, a payment form)
+    // handles Back itself, so the member gets one Back control rather than two
+    // stacked ones doing different things.
+    if (backHandler?.()) return;
     // history.back() when we actually came from somewhere in the app, so the
     // control matches what the browser's own back button would do; otherwise fall
     // through to the declared destination, which matters for deep links and for
@@ -150,6 +154,12 @@ export function watchMailboxBadge(userId) {
     stopNotices();
     stopPolicies();
   };
+}
+
+/** Registered by _page.js. Returns true when it consumed the Back press. */
+let backHandler = null;
+export function setBackHandler(fn) {
+  backHandler = fn;
 }
 
 export function currentSessionOr(redirectBase = '') {

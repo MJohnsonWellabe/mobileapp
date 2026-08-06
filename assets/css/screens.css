@@ -346,3 +346,555 @@
   color: var(--color-text-on-dark);
   font-size: var(--text-sm);
 }
+
+/* Last-four confirmation field — large and centred, because it is the one thing a
+   member types in the payment flow (docs/04 §MyPayments). */
+.input.last4 {
+  min-height: 56px;
+  font-size: var(--text-xl);
+  text-align: center;
+  letter-spacing: 0.4em;
+  padding-left: 0.4em;
+}
+
+/* ========================================================= tracker ======== */
+
+/* The "pizza tracker". Stage state is carried by the marker shape, the label, and
+   the timestamp — never by colour alone. */
+.tracker {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.tracker__step {
+  position: relative;
+  display: flex;
+  gap: var(--space-3);
+  padding-bottom: var(--space-5);
+}
+.tracker__step:last-child {
+  padding-bottom: 0;
+}
+/* The connecting line, drawn from each marker down to the next. */
+.tracker__step:not(:last-child)::before {
+  content: '';
+  position: absolute;
+  left: 15px;
+  top: 32px;
+  bottom: 4px;
+  width: 2px;
+  background: var(--color-border);
+}
+.tracker__step--done:not(:last-child)::before {
+  background: var(--color-success);
+}
+.tracker__marker {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid var(--color-border-strong);
+  background: var(--color-surface);
+  color: var(--color-text-secondary);
+}
+.tracker__marker svg {
+  width: 18px;
+  height: 18px;
+}
+.tracker__step--done .tracker__marker {
+  background: var(--color-success);
+  border-color: var(--color-success);
+  color: var(--color-text-on-dark);
+}
+.tracker__step--current .tracker__marker {
+  border-color: var(--color-primary);
+  border-width: 3px;
+  background: var(--color-primary-tint);
+  color: var(--color-primary);
+}
+.tracker__step--denied .tracker__marker {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: var(--color-text-on-dark);
+}
+.tracker__body {
+  min-width: 0;
+  padding-top: 3px;
+}
+.tracker__label {
+  display: block;
+  font-weight: var(--weight-medium);
+}
+.tracker__step--current .tracker__label {
+  font-weight: var(--weight-bold);
+  font-size: var(--text-lg);
+  color: var(--color-primary);
+}
+.tracker__step--todo .tracker__label {
+  color: var(--color-text-secondary);
+}
+.tracker__step--denied .tracker__label {
+  font-weight: var(--weight-bold);
+  font-size: var(--text-lg);
+  color: var(--color-danger);
+}
+.tracker__meta {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ======================================================== mailbox ========= */
+
+.segmented {
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  background: var(--color-surface-sunken);
+  border-radius: var(--radius-md);
+}
+.segmented__item {
+  flex: 1;
+  min-height: var(--tap-target-min);
+  border: 0;
+  border-radius: calc(var(--radius-md) - 3px);
+  background: none;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+.segmented__item[aria-selected='true'] {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-weight: var(--weight-bold);
+  box-shadow: var(--shadow-card);
+}
+
+.chips {
+  display: flex;
+  gap: var(--space-2);
+  overflow-x: auto;
+  padding-bottom: var(--space-1);
+  -webkit-overflow-scrolling: touch;
+}
+.chip {
+  flex: none;
+  min-height: 40px;
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  font: inherit;
+  font-size: var(--text-sm);
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+.chip[aria-pressed='true'] {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--color-text-on-dark);
+  font-weight: var(--weight-medium);
+}
+
+.notice-row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-4);
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--color-border);
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.notice-row:last-child {
+  border-bottom: 0;
+}
+.notice-row__icon {
+  flex: none;
+  color: var(--color-primary);
+  padding-top: 2px;
+}
+.notice-row__body {
+  flex: 1;
+  min-width: 0;
+}
+.notice-row__subject {
+  display: block;
+}
+.notice-row__subject.is-unread {
+  font-weight: var(--weight-bold);
+}
+.notice-row__preview {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+.notice-row__date {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-1);
+}
+/* Unread is a dot AND a "New" label — never colour alone (docs/01 principle 2). */
+.pill .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  display: inline-block;
+}
+
+.linkish {
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
+  cursor: pointer;
+  padding: var(--space-2);
+  min-height: var(--tap-target-min);
+}
+
+.topic-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.topic-card {
+  min-height: 84px;
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--color-border-strong);
+  background: var(--color-surface);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.topic-card[aria-pressed='true'] {
+  border-color: var(--color-primary);
+  border-width: 2px;
+  background: var(--color-primary-tint);
+  padding: calc(var(--space-3) - 1px);
+}
+.topic-card__label {
+  display: block;
+  font-weight: var(--weight-medium);
+}
+.topic-card__hint {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  margin-top: 2px;
+}
+
+.pref-group {
+  padding: var(--space-3) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.pref-group:last-child {
+  border-bottom: 0;
+}
+
+.bubble {
+  max-width: 88%;
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+.bubble--member {
+  margin-left: auto;
+  background: var(--color-primary-tint);
+  border-color: var(--color-primary-tint);
+}
+.bubble--wellabe {
+  margin-right: auto;
+}
+.bubble__who {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  color: var(--color-primary);
+  margin-bottom: var(--space-1);
+}
+.bubble__who svg {
+  width: 18px;
+  height: 18px;
+}
+.bubble__time {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  margin-top: var(--space-2);
+}
+
+/* ======================================================= document ========= */
+
+.doc-actions {
+  display: flex;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+
+/* Letter-proportioned and held to the same standard as the ID card, because this
+   is the other artifact that gets pinch-zoomed in the demo. */
+.doc {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: var(--space-6) var(--space-5);
+  box-shadow: var(--shadow-card);
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+.doc__letterhead {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: start;
+  gap: var(--space-2);
+  padding-bottom: var(--space-4);
+  border-bottom: 3px solid var(--color-brand-yellow);
+}
+.doc__mark {
+  width: 34px;
+  color: var(--color-brand-yellow);
+}
+.doc__mark svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+.doc__brand {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  letter-spacing: -0.02em;
+  align-self: center;
+}
+.doc__origin {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+  text-align: right;
+  line-height: 1.4;
+}
+.doc__addressee {
+  margin: var(--space-5) 0 var(--space-4);
+}
+.doc__meta {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+.doc__title {
+  font-size: var(--text-lg);
+  margin: var(--space-1) 0 var(--space-4);
+}
+.doc__h2 {
+  font-size: var(--text-base);
+  margin: var(--space-4) 0 var(--space-2);
+}
+.doc__table {
+  margin: var(--space-4) 0;
+  border-top: 1px solid var(--color-border);
+}
+.doc__row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.doc__list {
+  margin: 0 0 var(--space-4);
+  padding-left: var(--space-5);
+}
+.doc__list li {
+  margin-bottom: var(--space-1);
+}
+.doc__foot {
+  margin-top: var(--space-6);
+  padding-top: var(--space-4);
+  border-top: 1px solid var(--color-border);
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+.doc__fineprint {
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}
+
+/* Print: the document and nothing else. No app chrome, no nav, no buttons —
+   docs/04 §MyMailbox makes this an acceptance criterion, and docs/07 adds print
+   preview as a third visual-QA target. */
+@media print {
+  .topbar,
+  .tabbar,
+  .toast-region,
+  .doc-actions {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+  }
+  .app-main {
+    max-width: none;
+    padding: 0;
+  }
+  .doc {
+    border: 0;
+    box-shadow: none;
+    padding: 0;
+    font-size: 11pt;
+  }
+  .doc__letterhead {
+    border-bottom-color: #000;
+  }
+}
+
+/* ======================================================== rewards ========= */
+
+.balance {
+  text-align: center;
+}
+.balance__number {
+  display: block;
+  font-size: var(--text-3xl);
+  font-weight: var(--weight-bold);
+  line-height: 1.1;
+}
+.balance__unit {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+.tier {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+}
+.meter {
+  height: 10px;
+  border-radius: var(--radius-pill);
+  background: rgba(20, 24, 27, 0.12);
+  overflow: hidden;
+}
+.meter__fill {
+  display: block;
+  height: 100%;
+  background: var(--color-primary);
+  border-radius: var(--radius-pill);
+}
+
+.history-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--color-border);
+}
+.history-row:last-child {
+  border-bottom: 0;
+}
+.history-row__body {
+  min-width: 0;
+}
+.history-row__date {
+  display: block;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+.history-row__amount {
+  flex: none;
+  font-weight: var(--weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+.history-row__amount--earn {
+  color: var(--color-success);
+}
+.history-row__amount--spend {
+  color: var(--color-text-secondary);
+}
+
+/* ========================================================= health ========= */
+
+.ring--lg {
+  width: 108px;
+  height: 108px;
+}
+.ring--lg .ring__number {
+  font-size: var(--text-2xl);
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: var(--color-brand-yellow-tint);
+  border: 1px solid var(--color-brand-yellow);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+}
+.badge svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* =========================================================== care ========= */
+
+/* Cost and rating are as prominent as the name — this is meant to feel like
+   shopping, not like a phone book (docs/05 §MyCare). */
+.provider-stats {
+  display: flex;
+  gap: var(--space-2);
+}
+.provider-stat {
+  flex: 1;
+  text-align: center;
+  padding: var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--color-background);
+}
+.provider-stat__value {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+}
+.provider-stat__value svg {
+  width: 18px;
+  height: 18px;
+  color: var(--color-brand-yellow);
+}
+.provider-stat__label {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--color-text-secondary);
+}

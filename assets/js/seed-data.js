@@ -18,6 +18,11 @@ import { buildMailbox } from './seed-mailbox.js';
 
 const at = (today, days) => addDays(today, days);
 const ymd = (today, days) => toYmd(addDays(today, days));
+const atHour = (today, days, hour) => {
+  const d = addDays(today, days);
+  d.setHours(hour, (hour * 7) % 60, 0, 0);
+  return d;
+};
 
 /* ============================================================ members ====== */
 
@@ -729,8 +734,13 @@ export function buildSeed(today = startOfToday()) {
       claimNumber: `CLM-${year}-${c.number}`,
       description: c.description,
       status: last.status,
-      statusHistory: c.stages.map((s) => ({ status: s.status, timestamp: at(today, s.offsetDays) })),
-      submittedAt: at(today, c.stages[0].offsetDays),
+      // Real times of day, not midnight — a tracker that says every stage happened
+      // at 12:00 AM reads as fake at a glance.
+      statusHistory: c.stages.map((s, i) => ({
+        status: s.status,
+        timestamp: atHour(today, s.offsetDays, 9 + ((i * 3) % 8)),
+      })),
+      submittedAt: atHour(today, c.stages[0].offsetDays, 9),
     };
     if (c.deniedReason) data.deniedReason = c.deniedReason;
     if (c.paidAmount != null) data.paidAmount = c.paidAmount;

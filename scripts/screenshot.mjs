@@ -77,11 +77,13 @@ function parseArgs(argv) {
     else if (a === '--screen') out.screens.push(argv[++i]);
     else if (a === '--member') out.members.push(argv[++i]);
     else if (a === '--widths') out.widths = argv[++i].split(',').map(Number);
+    else if (a === '--query') out.query = argv[++i];
+    else if (a === '--name') out.name = argv[++i];
   }
   return out;
 }
 
-export async function capture({ screens, members, all, print, widths, emulator }) {
+export async function capture({ screens, members, all, print, widths, emulator, query, name }) {
   const targets = [];
   if (all) {
     for (const [screen, list] of Object.entries(BATCH)) {
@@ -147,7 +149,7 @@ export async function capture({ screens, members, all, print, widths, emulator }
           if (m.type() === 'error' && !m.text().includes('favicon')) problems.push(m.text().slice(0, 160));
         });
 
-        await page.goto(`${origin}/${def.path}`, { waitUntil: 'load' });
+        await page.goto(`${origin}/${def.path}${query ? `?${query}` : ''}`, { waitUntil: 'load' });
         await settle(page);
 
         if (print) await page.emulateMedia({ media: 'print' });
@@ -164,10 +166,10 @@ export async function capture({ screens, members, all, print, widths, emulator }
         await page.setViewportSize({ width, height: Math.max(height, 700) });
         await page.waitForTimeout(120);
 
-        const name = `${screen}_${member}_${width}${print ? '_print' : ''}.png`;
-        await page.screenshot({ path: path.join(OUT_DIR, name) });
-        written.push(name);
-        console.log(`  ${name}${problems.length ? `   !! ${problems[0]}` : ''}`);
+        const file = `${name ?? screen}_${member}_${width}${print ? '_print' : ''}.png`;
+        await page.screenshot({ path: path.join(OUT_DIR, file) });
+        written.push(file);
+        console.log(`  ${file}${problems.length ? `   !! ${problems[0]}` : ''}`);
 
         await context.close();
       }

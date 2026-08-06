@@ -223,7 +223,6 @@ function policyCard(policy, today) {
  *  the demo, so it is drawn as a card, not a table (docs/04 §MyCoverages). */
 function idCardView(policy, user) {
   return html`
-    ${backButton('Back to coverage')}
     <div class="idcard">
       <div class="idcard__top">
         <span class="idcard__mark" aria-hidden="true">${wellabeMark()}</span>
@@ -262,7 +261,6 @@ function idCardView(policy, user) {
 function detailView(policy, today) {
   const status = coverageStatus(policy, today);
   return html`
-    ${backButton('Back to coverage')}
     <div class="card stack-sm">
       <div class="card__meta">${esc(PRODUCT_LABELS[policy.product])}</div>
       <h2>${esc(policy.planName)}</h2>
@@ -301,7 +299,6 @@ function detailView(policy, today) {
  *  the action isn't a dead end (docs/04 §MyCoverages). */
 function agentView() {
   return html`
-    ${backButton('Back')}
     <div class="card stack">
       <div class="illustration" style="max-width:220px;opacity:.5" aria-hidden="true">
         ${illustration('two-people-talking')}
@@ -329,7 +326,6 @@ function addPicker(policies, health) {
   const available = Object.keys(PRODUCT_CATALOG).filter((p) => !held.has(p));
 
   return html`
-    ${backButton('Back to coverage')}
     <div>
       <h2>Add more coverage</h2>
       <p class="card__meta">Only showing what you don't already have.</p>
@@ -362,7 +358,6 @@ function enrollForm(product, user, health) {
   const guaranteed = product === 'hospitalIndemnity' && health?.qualifiesForGuaranteedIssue;
 
   return html`
-    ${backButton('Back')}
     <div class="card stack-sm">
       <div class="card__meta">${esc(PRODUCT_LABELS[product])}</div>
       <h2>${esc(spec.planName)}</h2>
@@ -421,11 +416,6 @@ function enrolledView(planName) {
   `;
 }
 
-function backButton(label) {
-  return html`<button class="btn btn--secondary" data-view="list" style="align-self:flex-start">
-    ${icons.chevronLeft()}${esc(label)}
-  </button>`;
-}
 
 function newPolicyNumber(product) {
   const prefix = {
