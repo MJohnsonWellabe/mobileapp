@@ -690,10 +690,16 @@ export function buildSeed(today = startOfToday()) {
     const member = MEMBERS.find((m) => m.key === p.member);
     const periodMonths = { monthly: 1, quarterly: 3, annual: 12 }[p.premiumFrequency];
     const count = p.premiumFrequency === 'annual' ? 2 : p.premiumFrequency === 'quarterly' ? 3 : 4;
+    const paidThroughDate = policyById.get(p.id).paidThroughDate;
 
     for (let i = count; i >= 1; i--) {
       const when = addMonths(today, -i * periodMonths);
       const resulting = toYmd(addMonths(when, periodMonths));
+      // A lapsed policy's paidThroughDate sits in the past — April's does, by two
+      // months. Without this check every policy gets `count` successful payments
+      // regardless, so her ledger would show a payment that silently paid her back
+      // up to date, contradicting the lapsed pill and the failed payment below.
+      if (resulting > paidThroughDate) continue;
       put(`payments/pay-${p.id}-${i}`, {
         userId: `user-${p.member}`,
         policyId: p.id,
