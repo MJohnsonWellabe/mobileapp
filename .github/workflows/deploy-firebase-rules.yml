@@ -11,7 +11,14 @@ name: Deploy Firebase rules
 
 on:
   push:
-    branches: [main]
+    # `main` is the intended long-term deploy source.
+    #
+    # The feature branch is listed temporarily so the rules can reach the live
+    # project before the branch is merged — the database is currently in
+    # production mode with everything denied, so nothing works until they land.
+    # Remove the second entry once this branch is merged, so `main` is the only
+    # thing that can publish rules.
+    branches: [main, claude/firebase-rules-setup-w4m13m]
     paths:
       - "firestore.rules"
       - "storage.rules"
