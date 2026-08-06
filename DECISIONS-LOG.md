@@ -494,6 +494,57 @@ below.
   Left for the next full `visual-qa-reviewer` pass to adjudicate with fresh eyes rather than
   guessing at a restructure the finding didn't specify.
 
+## Acceptance-criteria audit (Phase 4)
+
+CLAUDE.md's Phase 4 asks every acceptance criterion in `docs/04`–`06` to actually be
+exercised, not read and assumed. Did that live against the Firestore emulator — logging in
+as the relevant seeded member and doing the thing, per each doc's own review process —
+rather than a code-only pass. One real gap found and fixed; everything else checked held.
+
+**Fixed:** MyPayments' Submit button wasn't disabled for a below-due "another amount" on a
+lapsed policy — see the entry above under "Build-time judgment calls." Verified end to end
+against April via Playwright afterward: disabled at $10, enabled at the full $174, wrong
+last4 produces the inline mismatch with a `failed`-status payment and no
+`resultingPaidThroughDate`, the correct last4 succeeds, and MyCoverages/Home/the admin
+console Members tab all read Active with matching notices in MyMailbox — the exact
+"April, end to end" criterion both `docs/04` and `docs/05` name explicitly.
+
+**Verified, no changes needed** (live where the criterion calls for it, code-read where the
+logic is unambiguous and already covered by a passing rules test):
+
+- **Auth** — case-insensitive username/password matching, no field-specific error leak,
+  session persistence via `sessionStorage`, and role-based routing (`auth.js`, `login.js`)
+  all match `docs/04` exactly on inspection.
+- **MyInformation** — gender/DOB route through `dataRowButton`'s documentation-request flow
+  with no path to a direct field edit; rules test "gender/dob immutability" backs this at
+  the data layer too.
+- **MyCoverages** — "Add More Coverage" filters to products the member doesn't already
+  hold; "Talk to an Agent" is reachable from both the policy detail view and the enrollment
+  flow, with a working "Send a message instead" that opens the MyMailbox composer
+  pre-filled and copy that doesn't overpromise a live agent.
+- **MyClaims** — Sara (Processing), Todd (Paid), and Debbie (Denied) each render a distinct,
+  correctly-highlighted tracker with per-stage timestamps; Debbie's denial shows a specific
+  plain-language reason and a working "Request a review" that opens the composer with
+  `claim`/`subject` pre-filled; Matt's two claims list correctly.
+- **MyMailbox** — Dennis's "You're all caught up" state, Debbie's real two-message thread
+  (member right-aligned, Wellabe left-aligned, no fabricated reply), the Documents tab's
+  chip filter and year grouping, `window.print()` producing a clean letterhead artifact with
+  no app chrome, and delivery-preferences persistence (toggling one category's paper off
+  left every other category's paper on, confirmed against `users.deliveryPreferences`) all
+  checked out live.
+- **MyRewards / MyHealth** — covered by the daily-challenge rework and the tier-chip/
+  redeemed-item fixes above, both verified live earlier in this pass.
+- **Admin console (`docs/06`)** — member-tap filtering ("Showing April only, across every
+  tab" + "Show everyone") works across tabs including Payments; no `.tabbar` element is
+  ever present on an admin screen; names are always joined in, never a raw `userId`; status
+  pills reuse the member-app component and color tokens.
+
+Not re-verified line-by-line in this pass: MyCoverages' ID card artifact rendering and a
+few of MyMailbox's narrower per-`type` notice-routing claims — these were already covered
+by the earlier visual-QA screenshots and code inspection and didn't surface anything, but
+weren't independently re-driven through the browser here. Worth a look in the next full
+`visual-qa-reviewer` pass rather than assumed permanently clean.
+
 ## Closing summary
 
 *(Filled in at the end of Phase 4: what's solid, what's intentionally thin and why, and
