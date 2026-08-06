@@ -24,16 +24,23 @@ Firestore collection browser:
 - **Rewards** — `rewardsAccounts` balances/tiers per member, plus a browsable
   `rewardsTransactions` feed across everyone.
 - **Health** — `healthProfiles` per member, including who currently qualifies for the
-  guaranteed-issue offer (this should be trivially visible — an ops/underwriting viewer
+  no-health-questions offer (this should be trivially visible — an ops/underwriting viewer
   would specifically want this at a glance).
+- **Mailbox** — `notices` and `messageThreads` across all members, with unread counts per
+  member, so the ELT can see the member-communication channel from the ops side. Open
+  threads sort first; an internal viewer's first question is "who is waiting on us."
 
 ## Design requirements
 
 - Reuse the design tokens and shared components from `docs/01-design-system.md` — this is
-  still a Wellabe-branded surface, just a denser, table-oriented one, using
-  `--color-secondary` (navy) as the dominant chrome color to visually distinguish it from
-  the member app's teal-forward look without looking like an unrelated product.
-  Tables are the right default here, unlike the rest of the app.
+  still a Wellabe-branded surface, just a denser, table-oriented one. Use
+  `--color-primary` (deep teal) as the dominant chrome color, with pure white table
+  surfaces rather than the member app's warm `--color-background`, so the two read as
+  related but clearly distinct. (An earlier draft named a `--color-secondary` navy; that
+  token does not exist in the real brand palette.) Tables are the right default here,
+  unlike the rest of the app.
+- **The admin console has no bottom tab bar.** Tab navigation is its own top-level control;
+  the member tab bar must never appear on an admin screen.
 - Every table/list must be actually readable at a glance — sensible column widths, a clear
   header row, and status shown with the same pill component used member-side, not a raw
   string.
@@ -49,6 +56,10 @@ Firestore collection browser:
 
 - [ ] Every one of the 8 seeded members' data is visible and correctly attributed across
   every relevant tab.
+- [ ] Coverage status in the Members and Coverages tabs comes from the same
+  `coverageStatus(policy)` helper the member app uses (`docs/03`), so a policy can never
+  read Active on one surface and Lapsed on the other. Verify by paying as April and
+  immediately reloading the admin console.
 - [ ] Status information (coverage active/lapsed, payment success/failed, claim stage)
   uses the same pill component and colors as the member-facing app.
 - [ ] The admin login never sees or is offered any of the seven member-facing sections —

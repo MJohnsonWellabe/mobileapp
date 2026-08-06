@@ -44,6 +44,10 @@ the scaffold, since every later phase depends on it:
   viewport, navigates, waits for content to settle, and saves a PNG to a gitignored
   `/scripts/output/` folder with a filename that encodes the screen, member, and
   breakpoint (e.g., `my-claims_debbie_375.png`).
+- Supports **a third target for the MyMailbox document viewer: print preview**, captured
+  with Playwright's `page.emulateMedia({ media: 'print' })`. A document that looks right on
+  screen and drags app chrome, navigation, or a clipped page into the printout is a defect,
+  and it is invisible to a normal screenshot.
 - Should be runnable for a single screen ("just show me MyClaims as Debbie at both
   sizes") or for a batch (used in the Phase 4 full-app pass).
 

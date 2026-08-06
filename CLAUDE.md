@@ -80,11 +80,16 @@ a visual QA pass (see Phase 3, run continuously, not just at the end).
 2. MyCoverages (`docs/04-features-core.md`)
 3. MyPayments (`docs/04-features-core.md`)
 4. MyClaims (`docs/04-features-core.md`)
-5. MyRewards (`docs/05-features-engagement.md`)
-6. MyHealth (`docs/05-features-engagement.md`)
-7. MyCare (`docs/05-features-engagement.md`)
-8. Admin console (`docs/06-admin-console.md`)
-9. Seed data load for all 8 members + admin (`docs/03-data-model-and-seed-data.md`)
+5. MyMailbox (`docs/04-features-core.md`) — the Phase 0 gap-fill feature
+6. MyRewards (`docs/05-features-engagement.md`)
+7. MyHealth (`docs/05-features-engagement.md`)
+8. MyCare (`docs/05-features-engagement.md`)
+9. Admin console (`docs/06-admin-console.md`)
+10. Seed data load for all 8 members + admin (`docs/03-data-model-and-seed-data.md`)
+
+`assets/js/notices.js` is built in **Phase 1**, with the scaffold, not with MyMailbox.
+MyPayments, MyClaims, MyRewards, and MyHealth each write event notices inline in their own
+code paths, so the shared writer has to exist before them or all four get retrofitted.
 
 Within each feature, build the Firestore-backed real behavior, not a static mock —
 acceptance criteria in `docs/04`/`docs/05` require actual read/write against Firestore

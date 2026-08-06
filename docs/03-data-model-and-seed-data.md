@@ -21,6 +21,7 @@ against — keep them exact.
 | `address` | object `{street, city, state, zip}` | Freely editable |
 | `cardOnFile` | object `{brand, last4, expMonth, expYear}` \| `null` | Used by MyPayments' card-match check |
 | `bankAccountOnFile` | object `{bankName, last4}` \| `null` | Used for autopay setup |
+| `deliveryPreferences` | object | Four keys — `bills`, `claims`, `policy`, `rewards` — each `{paper: boolean, email: boolean}`. Backs MyMailbox's delivery preferences. Every `paper` seeds to `true`; see `docs/04` §MyMailbox for why paper is opt-out, never opt-in |
 | `createdAt` | timestamp | |
 
 The `admin` user document has `role: "admin"` and otherwise minimal/empty personal fields
@@ -42,6 +43,30 @@ The `admin` user document has `role: "admin"` and otherwise minimal/empty person
 | `autopayEnabled` | boolean | |
 | `coverageSummary` | string | 1–2 plain-language sentences on what it covers — this is member-facing copy, write it well |
 | `whatItCovers` | array of strings | Bullet list for the coverage detail screen |
+| `guaranteedIssue` | boolean | Optional. Set on a policy created through the MyHealth no-health-questions offer |
+
+#### Coverage status has exactly one source of truth: `paidThroughDate`
+
+A single shared helper, `coverageStatus(policy)`, is the **only** thing anywhere in the app
+— member screens, home dashboard, and admin console alike — that decides what a coverage
+status pill says:
+
+| Condition | Pill label | Token |
+|---|---|---|
+| `paidThroughDate >= today` | **Active** | `--color-success` |
+| `today − 31d <= paidThroughDate < today` | **Past due** | `--color-warning` |
+| `paidThroughDate < today − 31d` | **Lapsed** | `--color-danger` |
+
+The stored `status` field stays in the schema — `firestore.rules` validates its enum — but
+it is **display-irrelevant**. Any write that moves `paidThroughDate` must set `status` in
+the same write (`"active"` when `paidThroughDate >= today`, otherwise `"lapsed"`). No screen
+may read `status` to render a pill.
+
+Without this rule the app has two sources of truth for the single most important fact on
+the screen, and they will visibly disagree: pay as April, then open the admin console, and
+one surface says Active while the other still says Lapsed. Deriving from `paidThroughDate`
+is also the safe direction, because `firestore.rules` already enforces that field as
+monotonic.
 
 ### `payments/{paymentId}`
 
@@ -145,6 +170,54 @@ action to log a request record but doesn't name a collection). Append-only.
 | `note` | string \| null | Optional member-entered context |
 | `submittedAt` | timestamp | |
 
+### `notices/{noticeId}`
+
+Backs MyMailbox's Notices tab (`docs/04` §MyMailbox). Written by whichever feature module
+caused the event, in the same code path as its primary write.
+
+| Field | Type | Notes |
+|---|---|---|
+| `userId` | string | |
+| `type` | `"paymentReceived"` \| `"paymentFailed"` \| `"claimStatus"` \| `"coverage"` \| `"rateNotice"` \| `"rewards"` \| `"welcome"` | |
+| `subject` | string (≤80) | Plain language, second person |
+| `body` | string (≤600) | Two to four short paragraphs |
+| `actionLabel` | string \| null | e.g. "Pay $128.40 now" |
+| `actionTarget` | string \| null | In-app route, e.g. `claims/claim-debbie-ci` |
+| `documentId` | string \| null | Links to a `documents` doc when one exists |
+| `read` | boolean | Client writes may only flip this false → true |
+| `createdAt` | timestamp | |
+
+### `documents/{documentId}`
+
+| Field | Type | Notes |
+|---|---|---|
+| `userId` | string | |
+| `policyId` | string \| null | |
+| `category` | `"policy"` \| `"statement"` \| `"claim"` \| `"notice"` \| `"tax"` | |
+| `title` | string (≤120) | e.g. "2025 Premium Statement — Medicare Supplement Plan G" |
+| `renderer` | `"welcomePacket"` \| `"outlineOfCoverage"` \| `"premiumStatement"` \| `"claimSummary"` \| `"rateNotice"` \| `"premiumTaxSummary"` | Which layout the viewer draws |
+| `payload` | map | The values that renderer prints |
+| `issuedDate` | string (`YYYY-MM-DD`) | |
+| `createdAt` | timestamp | |
+
+Documents are **rendered from this data, never stored as binary files** — no PDF library, no
+build step, and `storage.rules` stays untouched. "Save or print" calls `window.print()`
+against a print stylesheet.
+
+### `messageThreads/{threadId}`
+
+| Field | Type | Notes |
+|---|---|---|
+| `userId` | string | |
+| `topic` | `"billing"` \| `"claims"` \| `"coverage"` \| `"other"` | |
+| `subject` | string (≤120) | |
+| `relatedTo` | map `{section, id}` \| null | What the member was looking at when they asked |
+| `status` | `"open"` \| `"answered"` \| `"closed"` | |
+| `messages` | array of `{from: "member"\|"wellabe", body, sentAt}` | |
+| `autoAckedAt` | timestamp \| null | Drives the "Received …" receipt line |
+| `lastMessageAt` | timestamp | |
+| `unreadByMember` | boolean | |
+
 ### `_config/seed` — not app data
 
 A single administrative document that gates the seeding of everything above. No client can
@@ -162,6 +235,42 @@ Payments, claims, and rewards transactions are each their own top-level collecti
 than nested under `users`) because the admin console (`docs/06-admin-console.md`) needs to
 show "all payments across all members," "all claims across all members," etc. as flat,
 sortable views — nesting would make that harder for no benefit at this scale.
+
+## Every seeded date is relative to the seed run, never hardcoded
+
+`seed.js` computes `const TODAY = startOfDay(new Date())` once and derives **every** date
+and timestamp it writes as an offset from it. A literal date string in `seed.js` is a bug.
+
+The reason is direct. Seeding happens days or weeks before the ELT demo. With hardcoded
+dates, Todd's rolling 100-day window slides past his 82 credited days and the
+no-health-questions offer — the one thing this doc says "must be visibly actionable" —
+silently disappears; every streak in the app reads 0 because the last credited day is weeks
+old; and April's lapse is a different size than the payment math expects. It is the failure
+mode nobody catches, because the day you seed is the day you test. Re-running `seed.js` on
+the morning of the demo must reproduce the same *demo state*, not the same *literal values*
+— still idempotent, because the document IDs are fixed.
+
+| Member | `healthDailyLog` seeding | Coverage dates |
+|---|---|---|
+| **Todd** | 82 credited days (3–5 challenges each) scattered across `TODAY−99 … TODAY−1`, with 18 uncredited gaps. **`TODAY` itself is left empty**, so a presenter can complete today's challenges live and watch 82 become 83 | active |
+| **Matt** | 45 consecutive credited days ending `TODAY−1` | both active |
+| **Debbie** | 20 consecutive credited days ending `TODAY−1` | active |
+| **Dave** | 12 consecutive credited days ending `TODAY−1` | `effectiveDate = TODAY − 6 years` |
+| **Sara** | 3 consecutive credited days ending `TODAY−1` | `effectiveDate = TODAY − 4 months` |
+| **April** | 14 consecutive credited days ending `TODAY−40`, giving current 0 / longest 14 | **`paidThroughDate = addMonths(TODAY, −2)`**, `premiumFrequency: "monthly"` |
+| **Eric**, **Dennis** | none | active |
+
+Claim numbers use the seed-run year: `CLM-{TODAY.year}-NNNNN`. Payment history spans
+`TODAY − 4 months … TODAY`.
+
+April's two-month lapse is not arbitrary — it makes `periodsOwed` exactly 3 under the
+MyPayments formula in `docs/04`, so paying the preselected amount lands her paid-through
+date one month into the future and her policy genuinely returns to Active. Change one and
+you must change the other.
+
+Volume note: this is roughly 165 `healthDailyLog` documents plus payment and rewards
+history. Per the individual-`setDoc()` constraint below, chunk them with `Promise.all` in
+batches of about 25 rather than one flat `Promise.all` over several hundred writes.
 
 ## Seed data: the 8 members
 
@@ -191,6 +300,24 @@ paying successfully as April restores her policy to Active — which needs a car
 matches. Her demo state comes from a seeded historical **failed** payment, and the
 mismatch is demonstrated live by typing the wrong digits into the form. Omitting her card
 would leave nothing to mismatch against and make her acceptance criterion unreachable.
+
+### MyMailbox seed additions
+
+Every member gets a `welcome` notice, a Welcome Packet document, an Outline of Coverage per
+policy, and a premium statement per policy year. On top of that:
+
+| Member | Additional notices | Additional documents | Threads |
+|---|---|---|---|
+| **Dave**, **Todd** | `rateNotice` (the annual rate-adjustment letter is the most common real Medigap mailing) | matching rate-notice document | — |
+| **April** | `paymentFailed`, dated to her failed payment | — | — |
+| **Sara** | `claimStatus` | — | — |
+| **Debbie** | `claimStatus` | claim summary | a two-message thread about her denied claim, with a real Wellabe reply |
+| **Todd** | `coverage` (the no-health-questions offer) | claim summary | — |
+| **Matt** | two `claimStatus` | two claim summaries | — |
+| **Dennis** | none — exactly one notice and two documents in total | — | — |
+
+Dennis's deliberately sparse mailbox is the test case for the "You're all caught up" state.
+Every member's `deliveryPreferences` seeds with all four `paper` flags **true**.
 
 ## Seed data: admin
 

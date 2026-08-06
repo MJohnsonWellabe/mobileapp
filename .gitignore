@@ -19,3 +19,6 @@ Thumbs.db
 # FIREBASE_SERVICE_ACCOUNT GitHub Actions secret instead.
 *-service-account*.json
 serviceAccountKey.json
+
+# One-off render checks written while building; never committed
+scripts/tmp/

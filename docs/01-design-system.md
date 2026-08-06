@@ -1,130 +1,223 @@
 # 01 — Design System
 
-> **Status: placeholder, pending brand assets.** Everything in this doc is a reasonable
-> starting point built from general insurance/health-brand and senior-audience UX research
-> — it is *not* sourced from Wellabe's actual brand guidelines, because none were available
-> when this was written. Per `CLAUDE.md`, check `/brand-assets/` first. If real screenshots,
-> a PPT, or brand references are there, extract the real palette, type, and component style
-> from them and overwrite the tokens below — then log the change in `DECISIONS-LOG.md`.
-> Everything is expressed as tokens specifically so this swap is mechanical, not a rewrite.
+> **Status: aligned to the real Wellabe brand.** An earlier draft of this document carried
+> a placeholder teal-green palette built from general insurance/health-brand research. Real
+> assets were found in `/brand-assets/` — two PowerPoint decks whose embedded media are
+> Wellabe's actual mark, brand palette, and illustration library, plus screenshots of
+> Wellabe's own agent portal. The tokens below are derived from those. See
+> `DECISIONS-LOG.md` → "Brand alignment" for what changed and why, and
+> `scripts/extract-brand-assets.py` for how the shipped assets were derived from the decks.
 
 ## Design principles for this app
 
 1. **Clarity beats density, every time.** This member base skews senior. Favor larger
    text, generous spacing, and one clear next action per screen over cramming in options.
-2. **Never make someone guess a status.** Coverage active/lapsed, payment paid-through
-   date, claim stage, points balance — these should be readable in under two seconds,
-   with color *and* text label, never color alone.
+2. **Never make someone guess a status.** Coverage active/past due/lapsed, payment
+   paid-through date, claim stage, points balance — these should be readable in under two
+   seconds, with color *and* an icon *and* a text label, never color alone.
 3. **Warm, not clinical; confident, not salesy.** Insurance triggers anxiety by default.
    Copy and visuals should feel like a competent person who has time for you, not a
    corporate wall of text or a growth-hacked consumer app.
-4. **Consistent shell, flexible content.** Navigation, header, and card patterns should be
-   identical across all seven sections so a member who learns one screen already
-   understands the rest — this mirrors how real insurers keep claims/policy/payment UI
-   patterns consistent across product lines even when the underlying data differs.
-5. **One brand, seven sections.** Every screen should be unmistakably the same app. If a
-   screen could be mistaken for a different product, the design system isn't being
-   followed.
+4. **Consistent shell, flexible content.** Navigation, header, and card patterns are
+   identical across every section, so a member who learns one screen already understands
+   the rest.
+5. **One brand, one app.** Every screen should be unmistakably the same product. If a
+   screen could be mistaken for something else, the design system isn't being followed.
 
-## Placeholder color tokens
+## Brand foundations
 
-Named semantically, not by hex, so the swap-in of real brand colors only touches this
-table.
+Wellabe's visual identity, as read from `/brand-assets/`:
 
-| Token | Placeholder value | Usage |
-|---|---|---|
-| `--color-primary` | `#0B6E5C` (deep teal-green) | Primary brand color: headers, primary buttons, active nav, brand marks. Teal-green reads as health + trust without the coldness of pure blue. |
-| `--color-primary-dark` | `#054A3D` | Pressed states, high-emphasis text on light backgrounds |
-| `--color-secondary` | `#1B3A5C` (deep navy) | Secondary emphasis, admin console chrome, headers on data-heavy screens |
-| `--color-accent` | `#E8823D` (warm amber-orange) | Rewards, streaks, badges, "new" indicators, points — the one warm, energetic color in the system, used sparingly so it stays meaningful |
-| `--color-success` | `#1E8E5A` | Paid, approved, active, completed |
-| `--color-warning` | `#B8860B` | Due soon, pending, needs attention |
-| `--color-danger` | `#B3261E` | Lapsed, denied, failed, overdue |
-| `--color-surface` | `#FFFFFF` | Card backgrounds |
-| `--color-background` | `#F5F7F6` | App background |
-| `--color-text-primary` | `#1A2027` | Body text — meets WCAG AA on `--color-surface` and `--color-background` |
-| `--color-text-secondary` | `#5B6470` | De-emphasized text, helper copy |
-| `--color-border` | `#DDE3E0` | Card borders, dividers |
+- **The mark** is a yellow double-`l` ligature — two joined loops, drawn from the `ll` in
+  the lowercase "wellabe" wordmark. Shipped as `assets/img/wellabe-mark.svg`, traced to
+  vector and filled with `currentColor` so one file serves both yellow-on-dark and
+  ink-on-light.
+- **Yellow is the brand color, and it is a *background* color.** Wellabe's own portal uses
+  large yellow panels carrying black text. It is never a text color, a border, or a thin
+  line on a light surface.
+- **Illustration is black single-weight line art** — seniors, couples, families, pets,
+  everyday objects — never photography. Fifteen pieces ship in
+  `assets/img/illustrations/`, each traced to vector and inheriting `currentColor`. Every
+  empty state and every section header draws from this set rather than from generic icons.
 
-Minimum contrast ratio for all text/background pairs: **4.5:1** (WCAG AA), checked, not
-assumed — this matters more than usual given the member base.
+## Color tokens
+
+Every value below is measured, not assumed. The contrast column gives the WCAG ratio
+against `--color-background` (`#F3EFEC`), which is the worst case in this app — anything
+that passes there passes on white too.
+
+| Token | Value | Contrast on bg | Usage |
+|---|---|---|---|
+| `--color-brand-yellow` | `#EDC319` | **1.48 — never text** | The mark, accent bars, streak and progress rings, points/rewards emphasis, filled panels. Only ever a background, and only ever under `--color-text-primary` (10.6:1). |
+| `--color-brand-yellow-tint` | `#FDF6DC` | — | Soft yellow surface for reward and milestone cards. |
+| `--color-brand-teal` | `#15A5BB` | 2.58 — **decorative only** | Wellabe's bright teal. Fails the 3:1 floor for UI components, so it is a large-fill and illustration-tint color, never a control, a border, or text. |
+| `--color-primary` | `#076874` | **5.67** | Deep teal derived from the brand teal. Every primary button, link, active state, and focus ring. White on it measures 6.48:1. |
+| `--color-primary-pressed` | `#04525C` | — | Pressed/active state for primary controls. |
+| `--color-primary-tint` | `#E4EFF1` | — | Selected rows, info panels, the admin console's table header fill. |
+| `--color-success` | `#0F7A4A` | 4.71 | Active, paid, approved, completed. |
+| `--color-warning` | `#A34A06` | 5.19 | Due soon, past due, pending, needs attention. |
+| `--color-danger` | `#A81E16` | 6.42 | Lapsed, denied, failed. |
+| `--color-surface` | `#FFFFFF` | — | Card backgrounds. |
+| `--color-background` | `#F3EFEC` | — | App background. Wellabe's warm off-white, not a neutral gray. |
+| `--color-text-primary` | `#14181B` | 15.62 | Body text and headings. |
+| `--color-text-secondary` | `#55606B` | 5.61 | Helper copy, metadata, de-emphasized labels. Passes AA, so it is safe for real content, not just decoration. |
+| `--color-border` | `#E2DDD7` | — | Card borders and dividers. Warm, to match the background. |
+
+**Warning is deliberately a burnt orange, not an amber.** The obvious "warning" color for an
+insurance app is a yellow-amber, and that is exactly what this app cannot use: it would sit
+a few degrees of hue from `--color-brand-yellow`, and a member would read a past-due badge
+as brand decoration. `#A34A06` is unmistakably an alert.
+
+Minimum contrast for all text: **4.5:1** (WCAG AA). Minimum for non-text UI components
+(control borders, active indicators, focus rings): **3:1** (WCAG 1.4.11). Both are checked
+against the table above, not assumed.
 
 ## Typography
 
 - **Font:** a system-first sans-serif stack (`-apple-system, "Segoe UI", Roboto, Helvetica,
-  Arial, sans-serif`) unless brand assets specify a web font — a licensed brand font adds
-  load time and risk for a prototype with no payoff if it's not actually Wellabe's font.
-- **Base body size:** 17px minimum on mobile (larger than the common 14–16px default) —
-  this is a deliberate accessibility choice for the member base, not an oversight.
-- **Scale:** use a consistent modular scale (e.g., 14 / 17 / 20 / 24 / 30px) and never an
-  arbitrary one-off size.
-- **Line height:** minimum 1.4 for body copy.
-- **Never rely on font weight alone to convey status** — pair with color and an icon or
-  label.
+  Arial, sans-serif`). No web font — it would add load time and a point of failure for a
+  demo, and Wellabe's brand font is not among the assets provided.
+- **Base body size:** 17px minimum on mobile. This is a deliberate accessibility choice for
+  this member base, not an oversight.
+- **Scale:** 13 / 15 / 17 / 20 / 24 / 30 / 38px. Never an arbitrary one-off size.
+- **Line height:** 1.5 for body copy, 1.25 for headings.
+- **Weights:** 400 body, 600 emphasis and labels, 700 headings and active nav.
+- **Never rely on weight or color alone to convey status** — pair with an icon and a label.
 
 ## Layout & responsiveness
 
-- Design and test at two breakpoints minimum: **~375px** (standard phone) and **~430–600px**
-  (large phone / small tablet, portrait). Both are hard acceptance criteria on every
-  screen — see each feature's Definition of Done.
+- Two required breakpoints: **375px** (standard phone) and **430–600px** (large phone /
+  small tablet, portrait). Both are hard acceptance criteria on every screen.
 - Single-column layouts throughout. No multi-column forms.
-- Bottom tab bar for the 7 member sections is off the table as primary nav (7 items is too
-  many for a bottom bar to stay legible/thumb-friendly at this text size) — see Navigation
-  below for the pattern to use instead.
-- Minimum touch target: 44×44px, with visible spacing between adjacent targets — never
-  place two tappable elements close enough to mis-tap on a phone.
-- Sticky primary actions (e.g., "Submit Payment," "Submit Claim") must never be covered by
-  the nav bar or another element at any breakpoint — this is one of the most common real
-  bugs the adversarial visual QA subagent should be checking for.
+- **Minimum touch target: 48×48px**, with at least 8px of visible spacing between adjacent
+  targets. This is above WCAG 2.2's 24×24 AA floor and above the common 44×44 figure, and
+  matches Material's 48dp. It is a deliberate choice for a member base with a meaningful
+  share of reduced dexterity. Inline text links within body copy are the only exception,
+  and they get 12px of vertical padding.
+- Sticky primary actions must never be covered by the tab bar. Every scrollable container
+  reserves clearance:
+  ```css
+  padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 16px);
+  ```
+- Content max-width of 560px, centered, so the large breakpoint doesn't produce
+  uncomfortably long line lengths.
+- **Never set `user-scalable=no`.** Pinch-zoom must work everywhere, especially on the ID
+  card and the document viewer.
 
 ## Navigation pattern
 
-- A persistent top app bar: Wellabe mark, screen title, and a profile/avatar icon that
-  opens MyInformation.
-- Primary navigation between the 7 sections lives in a **home/dashboard grid** (a card per
-  section: MyInformation, MyCoverages, MyPayments, MyClaims, MyRewards, MyHealth, MyCare),
-  plus a slide-out or bottom-sheet menu accessible from the top bar for direct jumps
-  between sections without returning home every time.
-- Each section's own screen keeps a persistent "back to home" affordance in the top bar.
-- The home dashboard is also where at-a-glance status lives: paid-through date, current
-  streak, points balance, any claim in progress — see `docs/04`/`docs/05` for exact
-  content per card. This is what makes the app worth opening daily rather than only when
-  something's due.
+**Primary navigation is a persistent bottom tab bar of exactly five items**, visible on
+every member screen.
+
+| Tab | Destination |
+|---|---|
+| **Home** | Dashboard |
+| **Coverage** | MyCoverages |
+| **Claims** | MyClaims |
+| **Pay** | MyPayments |
+| **More** | Full-screen list: MyHealth · MyRewards · MyCare · MyInformation · Log Out |
+
+An earlier draft ruled out a bottom bar on the grounds that seven sections is too many for
+one, and then reached for a hamburger menu instead. Seven is indeed too many — but a
+hamburger is the worst available answer for this audience. Hidden navigation is used
+roughly 1.5× less than visible navigation on mobile, and discoverability is close to halved
+by hiding a product's main navigation; persistent, always-visible tabs are specifically
+what helps users with memory or cognitive load. Four destinations plus a "More" tab is the
+pattern mainstream health-plan apps converge on, and it keeps the member's primary
+destinations permanently on screen.
+
+**"More" is a full-screen list, not a slide-out drawer or a bottom sheet.** Each row is a
+full-width band, minimum 64px tall, with a leading icon, a 17px label, a one-line live
+status ("12-day streak", "1,240 points", "Find a dentist near you"), and a chevron.
+
+**The home dashboard remains the primary map.** All eight section cards live on Home, each
+carrying a live status line. Home also carries a **"Today" card pinned at the top** with the
+five daily challenges as inline tappable checkboxes plus the streak ring — completing the
+daily habit takes zero navigation, which is what makes the "opens the app multiple times a
+week" goal in `docs/00-product-brief.md` realistic.
+
+**Top app bar — three elements maximum, and never more:**
+
+- **On Home:** the Wellabe mark (left); a badged mailbox icon and a text **"Log Out"**
+  button (right).
+- **On every other screen:** a **back control** on the left — a chevron *plus the word
+  "Back"*, one 48px target, never a bare icon — with the screen title beside it, 20px
+  semibold, single line, ellipsis-truncated; and the badged mailbox icon on the right.
+
+That is the whole bar. No profile avatar (MyInformation is a Home card and a More row), no
+hamburger (the tab bar replaces it). At 375px the fixed elements consume about 170px of the
+343px available, leaving room for a title that doesn't truncate on any of the eight
+sections. Log Out is one tap from Home and two from anywhere else.
+
+### Navigation tokens
+
+```css
+--nav-height:         64px;   /* excludes safe-area inset */
+--nav-icon-size:      26px;
+--nav-label-size:     12px;
+--topbar-height:      56px;
+--tap-target-min:     48px;
+--tap-target-spacing:  8px;
+```
+
+### Active tab state — four simultaneous signals, per principle 2
+
+Never color alone: a **filled** icon rather than an outline, label weight 700 rather than
+600, a 3px top indicator bar in `--color-primary`, and `aria-current="page"` so it is
+announced as well as seen.
 
 ## Core components (build once, reuse everywhere)
 
-- **Status pill** — colored background + icon + label (e.g., "Active," "Paid Through
-  4/12/26," "In Review"). Never color-only.
-- **Section card** — used on the home dashboard: icon, title, one line of live status,
+- **Status pill** — colored background tint + icon + text label ("Active", "Past due",
+  "In review", "Denied"). Never color-only, never an unlabeled dot.
+- **Section card** — home dashboard: icon, title, one line of live status, chevron.
+- **Data row** — label/value pair, used in MyInformation, MyCoverages, and the admin
+  console. Identical alignment and spacing everywhere it appears.
+- **Primary / secondary button** — one filled (`--color-primary`, white text) and one
+  outlined (`--color-primary` border and text). There is no third style. Minimum 48px tall,
+  full-width for primary actions on mobile.
+- **Progress / streak ring** — MyHealth streak and challenge progress, reused for
+  points-to-next-tier in MyRewards. Ring fill is `--color-brand-yellow`.
+- **Toast** — confirmations. Auto-dismiss, also tap-dismissible, never covering the primary
+  action underneath. A toast is *never* the only record of something that happened; the
+  durable copy lives in MyMailbox.
+- **Empty state** — an illustration from the brand set, a heading, one sentence, and where
+  it makes sense one action. Every list screen has one. A blank region or a bare "0" is a
+  defect.
+- **Skeleton state** — every screen that reads Firestore shows shaped placeholders while
+  loading, never a blank card or a layout that jumps when data lands.
+- **Error / retry state** — every screen that reads Firestore has a designed failure state
+  with a "Try again" action and plain-language copy ("We couldn't load your coverage just
+  now."). This app is fully client-side and will be demoed over conference-room Wi-Fi;
+  Firestore's `persistentLocalCache` is enabled so a dropped connection renders cached data
+  rather than nothing.
+- **Notice row** — MyMailbox: type icon, subject (bold when unread), two-line clamped
+  preview, full date, and an unread marker that is a dot *and* a "New" pill.
+- **Document row** — MyMailbox: document icon, full title, category pill, issue date,
   chevron.
-- **Data row** — label/value pair used throughout MyInformation, MyCoverages, admin
-  console. Consistent alignment and spacing everywhere it appears.
-- **Primary/secondary button** — one filled (primary teal) and one outlined (secondary)
-  style, used consistently; never invent a third button style.
-- **Progress/streak ring or bar** — used in MyHealth for daily streak and challenge
-  progress; reused in MyRewards for points-to-next-tier if applicable.
-- **Toast notification** — used for confirmations (payment success, reward redeemed, claim
-  submitted) — auto-dismiss, but also dismissible by tap, and never blocking the primary
-  action underneath it.
-- **Empty state** — every list-type screen (claims, transaction history, points history)
-  needs a designed empty state, not a blank screen, for members who genuinely have none yet.
 
 ## Imagery & content tone
 
-- Use simple, friendly line icons, not photographic imagery, for section icons and status
-  indicators — keeps the app feeling light and fast rather than stock-photo generic.
-- Fake ID cards (MyCoverages) and provider photos (MyCare) are the exception — those
-  should look like real, polished artifacts, since they're meant to be inspected closely
-  in the demo. See `docs/04`/`docs/05` for exact content requirements.
-- Microcopy tone: plain language, second person, short sentences. Avoid insurance jargon
-  where a plain-English equivalent exists; where a technical term is unavoidable (e.g.,
-  "paid-through date"), define it briefly the first time it appears on a screen.
+- Section icons and status indicators are simple line icons consistent with the brand's
+  line-art style — never photography.
+- Illustrations come from `assets/img/illustrations/` and are used at section headers and in
+  empty states. They inherit `currentColor`; the default treatment is
+  `--color-text-primary` on a light surface, or `--color-brand-yellow` on a dark panel. Do
+  not tint them arbitrarily.
+- The **ID card** (MyCoverages) and the **document viewer** (MyMailbox) are the two
+  exceptions to "keep it light" — both are meant to be inspected closely in the demo and
+  must look like finished, printed artifacts.
+- **Dates are always written in full** — "March 12, 2026". Never `3/12/26`, and never a
+  relative-only "3d ago". This matters more for this audience than the space it costs.
+- Microcopy: plain language, second person, short sentences. Avoid jargon where plain
+  English exists; where a technical term is unavoidable ("paid-through date"), define it
+  briefly the first time it appears on a screen.
 
 ## Definition of done for this design system itself
 
-- Every color/type/spacing value used anywhere in the app traces back to a token defined
-  here (or added here, if a real need arises) — no inline one-off values.
-- If brand assets were found, this doc reflects them, not the placeholder table above, and
-  the swap is logged in `DECISIONS-LOG.md`.
-- A component built for one section (e.g., the status pill) looks and behaves identically
-  when reused in another — this is what the visual QA subagent checks for cohesion.
+- Every color, type, and spacing value used anywhere in the app traces back to a token
+  defined here — no inline one-off values.
+- Every text/background pair in the shipped app meets 4.5:1, and every control border,
+  active indicator, and focus ring meets 3:1.
+- A component built for one section looks and behaves identically when reused in another.
+- Brand yellow appears nowhere as text, a border, or a status color.
