@@ -3,6 +3,9 @@
 //   node scripts/seed-node.mjs --emulator          load the local emulator
 //   node scripts/seed-node.mjs --project           load the real Firebase project
 //   node scripts/seed-node.mjs --project --verify   read back and report, write nothing
+//   node scripts/seed-node.mjs --admin             load the real project via a service
+//                                                    account, ignoring _config/seed
+//   node scripts/seed-node.mjs --admin --verify    read back the real project as admin
 //
 // This is the transport the build uses. The human-facing one is seed.html, which
 // runs assets/js/seed.js in a browser with the Firebase SDK. Both consume the same
@@ -15,9 +18,17 @@
 //
 // Against the emulator this sends `Authorization: Bearer owner`, which the Firestore
 // emulator treats as rules-bypassing — so local seeding needs no _config/seed flag.
-// Against the real project it sends no credentials at all and the rules apply in
-// full, exactly as they would for the browser seeder, which means the flag must be
-// on (setup/FIREBASE-SETUP.md §7).
+// Against the real project with `--project` it sends no credentials at all and the
+// rules apply in full, exactly as they would for the browser seeder, which means the
+// flag must be on (setup/FIREBASE-SETUP.md §7).
+//
+// `--admin` is the third path: a service-account key (path from
+// GOOGLE_APPLICATION_CREDENTIALS) mints an IAM-scoped OAuth token, and IAM-authenticated
+// requests bypass Firestore security rules entirely — rules only ever govern
+// client-SDK/anonymous access. That means no _config/seed dance and no console step;
+// it also means this mode must never be reachable from anything the rules unit tests
+// exercise, and the key must never be committed (.gitignore covers common
+// service-account filenames, but keep the key file outside the repo entirely).
 //
 // Individual PATCH requests, never a :commit batch. seedMode() costs up to 4
 // document access calls; a single write has a budget of 10, but a batch shares 20
@@ -30,6 +41,7 @@ import { readFileSync } from 'node:fs';
 
 const args = process.argv.slice(2);
 const useEmulator = args.includes('--emulator');
+const useAdmin = args.includes('--admin');
 
 // Node's fetch does not read proxy environment variables, so requests to the real
 // project need an explicit dispatcher. It must NOT be installed for the emulator:
@@ -54,12 +66,29 @@ const base = useEmulator
 // project. Without it, a single bad field would only surface after the human had
 // already opened the console.
 const rulesMode = args.includes('--rules');
-const authQuery = useEmulator ? '' : `?key=${config.apiKey}`;
-const headers =
-  useEmulator && !rulesMode
-    ? { 'content-type': 'application/json', authorization: 'Bearer owner' }
-    : { 'content-type': 'application/json' };
+const authQuery = useEmulator || useAdmin ? '' : `?key=${config.apiKey}`;
+const headers = await buildHeaders();
 const ownerHeaders = { 'content-type': 'application/json', authorization: 'Bearer owner' };
+
+async function buildHeaders() {
+  if (useAdmin) {
+    if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+      throw new Error(
+        '--admin needs GOOGLE_APPLICATION_CREDENTIALS pointing at a service-account JSON key ' +
+          '(Cloud Datastore User role is enough — see setup/FIREBASE-SETUP.md §7)',
+      );
+    }
+    const { GoogleAuth } = await import('google-auth-library');
+    const auth = new GoogleAuth({ scopes: ['https://www.googleapis.com/auth/datastore'] });
+    const client = await auth.getClient();
+    const { token } = await client.getAccessToken();
+    return { 'content-type': 'application/json', authorization: `Bearer ${token}` };
+  }
+  if (useEmulator && !rulesMode) {
+    return { 'content-type': 'application/json', authorization: 'Bearer owner' };
+  }
+  return { 'content-type': 'application/json' };
+}
 
 /** Pull the web config out of the committed JS module without importing it —
  *  it has no Node-friendly export path and this avoids a second source of truth. */
@@ -112,10 +141,17 @@ async function countCollection(name) {
 
 /* ----------------------------------------------------------------- main -- */
 
+if (useAdmin && useEmulator) {
+  throw new Error('--admin and --emulator are mutually exclusive');
+}
+
 const seed = buildSeed();
 const collections = [...new Set([...seed.keys()].map((p) => p.split('/')[0]))];
 
-console.log(`target:   ${useEmulator ? 'EMULATOR 127.0.0.1:8080' : `LIVE PROJECT ${projectId}`}`);
+const targetLabel = useEmulator
+  ? 'EMULATOR 127.0.0.1:8080'
+  : `LIVE PROJECT ${projectId}${useAdmin ? ' (admin)' : ''}`;
+console.log(`target:   ${targetLabel}`);
 console.log(`documents: ${seed.size} across ${collections.length} collections\n`);
 
 if (verifyOnly) {

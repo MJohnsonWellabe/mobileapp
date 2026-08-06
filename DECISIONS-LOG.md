@@ -349,6 +349,19 @@ any app code existed.)*
   `assets/js/seed.js` (browser, Firebase SDK, the documented artifact the human runs) and
   `scripts/seed-node.mjs` (Node, Firestore REST through an undici `ProxyAgent`, what the
   build uses to seed and verify). Same documents either way; no duplicated content.
+- **A third, admin-authenticated seed path, by explicit human request.** The human
+  generated a narrowly-scoped service account (`Cloud Datastore User` only — not
+  editor/owner) specifically so Claude Code could seed and verify the real project
+  directly instead of relaying "open the console and flip `_config/seed`" instructions
+  every time. `scripts/seed-node.mjs --admin` mints an IAM OAuth token from the key
+  (path via `GOOGLE_APPLICATION_CREDENTIALS`, `google-auth-library`, added as an explicit
+  devDependency though it was already present transitively via `firebase-tools`) and talks
+  to the same Firestore REST endpoints the other two transports use — IAM-authenticated
+  requests bypass security rules entirely, so this mode needs no seed-mode flag and no
+  console step. The key itself lives only in the session's gitignored scratch directory,
+  never in the repo; the human was told to revoke it once real-project verification is
+  done, consistent with how the existing `github-rules-deployer` service account
+  (`setup/FIREBASE-SETUP.md` §7) is handled.
 
 ## Visual QA patterns
 
