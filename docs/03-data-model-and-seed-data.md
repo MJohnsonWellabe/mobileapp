@@ -73,8 +73,9 @@ The `admin` user document has `role: "admin"` and otherwise minimal/empty person
 
 | Field | Type | Notes |
 |---|---|---|
-| `pointsBalance` | number | Never allowed to go negative — enforce client-side *and* treat as a Firestore rule check |
+| `pointsBalance` | number | Never allowed to go negative — enforced client-side *and* in `firestore.rules` |
 | `tier` | `"Bronze"` \| `"Silver"` \| `"Gold"` | Derived from lifetime points earned, not current balance |
+| `lifetimePointsEarned` | number | Optional. The running total `tier` derives from — without it, tier can't be recomputed after a redemption drops the balance |
 
 ### `rewardsTransactions/{txId}`
 
@@ -129,6 +130,32 @@ Climb 10 flights of stairs · 10 minutes of activity · One breathing/meditation
 Seed at least 4–5 providers per service type across a handful of service types so a search
 returns a believable result set, not one item.
 
+### `changeRequests/{requestId}`
+
+Backs the MyInformation "Start a Request" flow for gender and DOB (`docs/04` requires the
+action to log a request record but doesn't name a collection). Append-only.
+
+| Field | Type | Notes |
+|---|---|---|
+| `userId` | string | |
+| `field` | `"gender"` \| `"dob"` | Enforced in rules — this collection can only ever be about these two fields |
+| `currentValue` | string | May be empty |
+| `requestedValue` | string | |
+| `status` | `"open"` \| `"closed"` | Client writes are forced to `"open"`; only seed mode can write `"closed"` |
+| `note` | string \| null | Optional member-entered context |
+| `submittedAt` | timestamp | |
+
+### `_config/seed` — not app data
+
+A single administrative document that gates the seeding of everything above. No client can
+read or write it; only the Firebase console can. `seed.js` needs to perform writes the app
+itself must never perform (creating member documents, opening a claim already at "Paid",
+writing the shared `rewardsCatalog` and `careProviders` collections), and since `seed.js`
+is a browser script with the same zero privileges as the app, the rules cannot tell the two
+apart. This flag is how they're distinguished. Fields: `enabled` (boolean) and `expiresAt`
+(timestamp, so a flag left on closes itself). Operating procedure is in
+`setup/FIREBASE-SETUP.md` §7.
+
 ## Why this shape, briefly
 
 Payments, claims, and rewards transactions are each their own top-level collection (rather
@@ -155,9 +182,15 @@ single current snapshot.
 | **Todd** | Medicare Supplement (Plan N) | Active | One claim, status **Paid** (fully resolved, good "happy path" example) | Current, autopay on | High balance, Gold tier, rich earn/spend history | **82/100 days completed**, `qualifiesForGuaranteedIssue: true`, offer already surfaced | This is "someone in this state" from the brief — the guaranteed-issue Hospital Indemnity offer must be visibly actionable when logged in as Todd |
 | **Matt** | Dental **and** Hospital Indemnity (two active policies) | Both active | Two claims: one **Paid**, one **Reviewing** | Current on both, mixed card/autopay | Highest balance, Gold tier | Strong streak (~45 days), several badges | Demonstrates a multi-policy member and a fuller claims history/list view |
 
-Give every member a complete `users/{userId}` document including a `cardOnFile` (except
-where a mismatch is the point, per April) so the MyPayments card-match acceptance
-criterion in `docs/04-features-core.md` is testable for each of them.
+Give every member a complete `users/{userId}` document including a valid `cardOnFile`, so
+the MyPayments card-match acceptance criterion in `docs/04-features-core.md` is testable
+for each of them.
+
+**April included.** An earlier draft of this doc excepted her, but `docs/04` requires that
+paying successfully as April restores her policy to Active — which needs a card that
+matches. Her demo state comes from a seeded historical **failed** payment, and the
+mismatch is demonstrated live by typing the wrong digits into the form. Omitting her card
+would leave nothing to mismatch against and make her acceptance criterion unreachable.
 
 ## Seed data: admin
 
@@ -173,6 +206,24 @@ safe to re-run without duplicating documents (use fixed, predictable document ID
 `user-dave`, `policy-dave-medsupp`, rather than auto-generated IDs, specifically so re-runs
 overwrite cleanly). This is a dev tool run manually from a local console/browser page —
 it is never linked from the live member-facing app.
+
+Three constraints the security rules impose on how it must be written:
+
+- **Use individual `setDoc()` calls, never `writeBatch()` or `runTransaction()`.** A
+  single-document write gets a budget of 10 document access calls; an entire batch or
+  transaction shares a budget of **20 across all of its documents**. The seed-mode check
+  costs up to 4 access calls, so a large batch would blow the budget and fail wholesale.
+  Chunked `Promise.all` over individual writes is the correct shape. (The app itself may
+  batch freely — the seed check short-circuits away on the normal path and costs nothing.)
+- **`_config/seed.enabled` must be `true` while it runs** (`setup/FIREBASE-SETUP.md` §7).
+- **Every document must satisfy the shape contracts in `firestore.rules`**, which are
+  stricter than the tables above: `claimNumber` matches `CLM-YYYY-NNNNN`, `policyNumber` is
+  uppercase alphanumerics and hyphens, `address.state` is exactly two letters, `zip` is five
+  digits, and the admin user still needs `email`/`phone`/`preferredContactMethod`/`address`
+  keys present even though its values are empty — empty strings pass, missing keys don't.
+  A seed failure reporting "Missing or insufficient permissions" while seed mode is on is a
+  shape violation, not a permissions problem; the console's Rules Playground pinpoints the
+  failing clause.
 
 ## Definition of done for data model & seed
 

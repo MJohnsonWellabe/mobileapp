@@ -1,13 +1,13 @@
 # Wellabe Mobile App — Design Bible & Claude Code Prompt Package
 
-This folder is a complete "design bible" for building the Wellabe mobile app prototype
-with Claude Code. It is meant to be dropped into the root of your GitHub repo and handed
-to Claude Code as-is.
+This repo holds a complete "design bible" for building the Wellabe mobile app prototype
+with Claude Code, plus the Firebase wiring and security rules it builds against. The app
+itself is served as static files from this same root by GitHub Pages.
 
 ## What's in here
 
 ```
-wellabe-app-design-bible/
+/ (repo root — also the GitHub Pages publish root)
 ├── CLAUDE.md                          ← Claude Code reads this automatically. Start here.
 ├── DECISIONS-LOG.md                   ← Living log Claude Code writes to as it makes decisions
 ├── .claude/agents/
@@ -23,17 +23,30 @@ wellabe-app-design-bible/
 │   ├── 06-admin-console.md            ← The admin-only data-viewer experience
 │   ├── 07-testing-and-visual-qa.md    ← Acceptance-testing process + the adversarial review loop
 │   └── 08-agent-workflow.md           ← How/when the two subagents get invoked, and by whom
-└── setup/
-    ├── FIREBASE-SETUP.md              ← Step-by-step for YOU to run once, by hand
-    └── GITHUB-SETUP.md                ← Step-by-step for YOU to run once, by hand
+├── setup/
+│   ├── FIREBASE-SETUP.md              ← Step-by-step for YOU to run once, by hand
+│   └── GITHUB-SETUP.md                ← Step-by-step for YOU to run once, by hand
+├── brand-assets/                      ← Screenshots and look-and-feel PPT (read-only input)
+├── firestore.rules, storage.rules     ← Security rules; deployed by GitHub Actions
+├── firebase.json, .firebaserc         ← Which rules deploy, and to which project
+├── cors.json                          ← Bucket CORS, applied by hand only if needed
+├── assets/js/firebase-config.js       ← Firebase web config (safe to commit)
+├── assets/js/firebase-init.js         ← Initializes the SDK once; exports db + storage
+├── tests/rules/                       ← Rules unit tests — `npm test`
+└── .github/workflows/                 ← Tests then deploys the rules on push to main
 ```
+
+Everything below `assets/` beyond the two Firebase files, plus `index.html`, `pages/`, and
+`scripts/`, is what Claude Code builds. See `docs/02-architecture.md` for the target tree.
 
 ## How to use this
 
 1. **You do the one-time human setup first.** Follow `setup/FIREBASE-SETUP.md` and
-   `setup/GITHUB-SETUP.md` yourself — create the Firebase project and the GitHub repo,
-   grab the config keys, and drop them where those guides say to. Claude Code takes over
-   from there (pushing Firestore rules, security changes, and all app code).
+   `setup/GITHUB-SETUP.md` yourself — create the Firebase project, the Firestore database
+   and Storage bucket, and the deploy service account (`FIREBASE-SETUP.md` §7). Claude Code
+   takes over from there for all app code. It cannot deploy security rules itself — it has
+   no Firebase credentials — so rules deploy through GitHub Actions once that service
+   account secret exists.
 2. **Drop your screenshots and the look-and-feel PPT into `/brand-assets/`** at the repo
    root before you start Claude Code, if you have them ready. `docs/01-design-system.md`
    currently contains a placeholder palette built from general insurance/health-brand

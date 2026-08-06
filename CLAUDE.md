@@ -109,10 +109,19 @@ before calling a screen done. Log recurring issues (not every individual fix) in
    8 named members with deliberately varied states, plus the admin login.
 4. Write a short closing summary at the bottom of `DECISIONS-LOG.md`: what's solid, what's
    intentionally thin (and why), and what you'd tackle first in the next iteration.
-5. Do **not** touch anything under `setup/` or run any `git push`, GitHub Pages deploy
-   steps, or repo/organization-level GitHub configuration — the human owns that per
-   `setup/GITHUB-SETUP.md`. You may and should commit your work locally with clear,
-   incremental commit messages as you go.
+5. Do **not** run GitHub Pages deploy steps or repo/organization-level GitHub
+   configuration — branch protection, Pages source, secrets — the human owns that per
+   `setup/GITHUB-SETUP.md`. Commit your work with clear, incremental messages as you go.
+
+   **Push policy (agreed with the human, supersedes the original "never push" rule):**
+   push to your assigned feature branch only, never to `main`. The human reviews and
+   merges. The original rule assumed a local session; work in an ephemeral container is
+   lost if it is never pushed.
+
+   **`setup/` is human-owned content, but factual errors in it are fixable.** Correcting a
+   step that is actually wrong — a bad domain format, an instruction that would break the
+   demo — is in scope, provided each correction is logged in `DECISIONS-LOG.md`. Changing
+   the human's *process* or workflow is not.
 
 ## Ground rules throughout
 

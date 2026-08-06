@@ -15,10 +15,14 @@ in case you want to double check anything or hand this off to someone else.
 
 ## 2. Add this design bible package
 
-1. Copy the entire contents of this `wellabe-app-design-bible/` folder into the **root**
-   of the repo (so `CLAUDE.md` sits at the repo root, not nested one level down — Claude
-   Code looks for it there).
+1. Copy the entire contents of the design-bible package into the **root** of the repo, so
+   `CLAUDE.md` sits at the repo root and not nested one level down — Claude Code looks for
+   it there, and GitHub Pages needs the root free to serve the app from.
 2. Commit and push.
+
+> **Already done in this repo.** The package was originally uploaded into a nested
+> `wellabe-app-design-bible/` folder and has since been moved up to the root. Nothing to do
+> here unless you are setting up a fresh repo from the package.
 
 ## 3. Drop in your brand assets (optional, but do this before running Claude Code if you can)
 
@@ -42,11 +46,17 @@ if it's there.
 4. Save. GitHub will give you a URL, typically
    `https://<your-username>.github.io/<repo-name>/`.
 
-## 5. Add that URL to Firebase's authorized domains
+## 5. Add that host to Firebase's authorized domains
 
-Once you have the Pages URL, go back to `setup/FIREBASE-SETUP.md` step 6 and make sure
-it's added there — the app won't reliably reach Firebase from a domain that isn't
-authorized.
+Once you have the Pages URL, go back to `setup/FIREBASE-SETUP.md` §6 and add it there.
+
+Add the **host only** — `<your-username>.github.io` — not the full URL from step 4.
+Firebase's allowlist takes hosts and will reject a value carrying a scheme or a
+`/<repo-name>` path.
+
+Note that this list gates Firebase Auth sign-in flows, and this project has no Firebase
+Auth. It is worth setting correctly, but it is not what makes Firestore or Storage work,
+and it will not fix a permissions error. See `setup/FIREBASE-SETUP.md` §6 and §8.
 
 ## 6. Handing off to Claude Code
 

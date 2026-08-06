@@ -1,0 +1,86 @@
+rules_version = '2';
+
+// =============================================================================
+// Wellabe member-app prototype — Cloud Storage security rules
+// Bucket: mobileapp-3dcda.firebasestorage.app
+//
+// Same threat model as firestore.rules: request.auth is always null, so the
+// {userId} path segment below is a NAMING CONVENTION, not an access boundary.
+// It is validated for shape, never for ownership.
+//
+// Storage rules cannot read Firestore. There is no cross-service get(), so these
+// rules cannot verify that {claimId} corresponds to a real claim document or
+// that {userId} owns it. Everything enforceable here is object metadata: path
+// shape, content type, and size.
+//
+// One thing rules_version 2 does buy us: `read` splits into `get` and `list`.
+// We grant `get` (the app must render photoUrl, and the upload flow must call
+// getDownloadURL()) and never grant `list`, so the bucket cannot be enumerated.
+// Someone must already hold a download URL to see a photo.
+// =============================================================================
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // Mirrors firestore.rules — keep the two dates in sync.
+    function beforeSunset() {
+      return request.time < timestamp.date(2027, 3, 31);
+    }
+
+    function isMemberId(id) {
+      return id.matches('user-[a-z0-9-]{1,40}');
+    }
+
+    function isClaimId(id) {
+      return id.matches('[A-Za-z0-9_-]{1,64}');
+    }
+
+    function isClaimPhoto() {
+      return request.resource != null
+        && request.resource.size > 0
+        && request.resource.size < 10 * 1024 * 1024          // 10 MB ceiling
+        && request.resource.contentType is string
+        && request.resource.contentType.matches('image/(jpeg|png|heic|heif|webp)');
+    }
+
+    // PATH TEMPLATE:  claims/{userId}/{claimId}/{fileName}
+    // satisfies docs/02-architecture.md §Firebase wiring item 5 ("keyed by
+    // member ID and claim ID"). Concrete example:
+    //   claims/user-sara/claim-sara-hi-001/1754500000000-receipt.jpg
+    // The resulting download URL is stored on claims/{claimId}.photoUrl, which
+    // firestore.rules treats as write-once.
+    match /claims/{userId}/{claimId}/{fileName} {
+
+      // Objects are readable by anyone holding the URL; `list` is never granted,
+      // so the bucket cannot be walked.
+      allow get: if true;
+
+      // Claim evidence is immutable once uploaded. `resource == null` is what
+      // actually enforces that, and it is load-bearing: an upload to an existing
+      // path is classified as `create`, not `update`, so `allow update: if false`
+      // below does NOT stop an overwrite on its own. (Verified against the
+      // Storage emulator — without this clause, re-uploading over an existing
+      // claim photo succeeds.)
+      //
+      // my-claims.js must therefore generate a unique file name per upload, e.g.
+      //   `${Date.now()}-${originalName.replace(/[^A-Za-z0-9._-]/g, '_')}`
+      // A retaken photo becomes a new object; the old one is orphaned, which is
+      // acceptable for a prototype and avoids a delete path nobody can authorise.
+      allow create: if beforeSunset()
+                    && resource == null
+                    && isMemberId(userId)
+                    && isClaimId(claimId)
+                    && fileName.matches('[A-Za-z0-9._-]{1,100}')
+                    && isClaimPhoto();
+
+      allow update, delete: if false;
+    }
+
+    // Documentation only — Storage ORs allow rules exactly like Firestore, so
+    // this cannot revoke anything above. Any path not matched above is denied
+    // because no allow rule grants it.
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

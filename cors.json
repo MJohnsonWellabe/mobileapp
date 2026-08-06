@@ -1,0 +1,28 @@
+[
+  {
+    "origin": [
+      "https://mjohnsonwellabe.github.io",
+      "http://localhost:3000",
+      "http://localhost:5000",
+      "http://localhost:8000",
+      "http://127.0.0.1:8000"
+    ],
+    "method": ["GET", "HEAD", "PUT", "POST"],
+    "responseHeader": [
+      "Content-Type",
+      "Content-Length",
+      "Content-Range",
+      "Content-Disposition",
+      "Content-Encoding",
+      "Cache-Control",
+      "Range",
+      "Authorization",
+      "x-goog-resumable",
+      "x-goog-content-length-range",
+      "x-firebase-storage-version",
+      "x-firebase-gmpid",
+      "x-firebase-appcheck"
+    ],
+    "maxAgeSeconds": 3600
+  }
+]

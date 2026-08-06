@@ -1,0 +1,100 @@
+name: Deploy Firebase rules
+
+# Deploys firestore.rules and storage.rules to project mobileapp-3dcda.
+#
+# Setup required once, by a human (see setup/FIREBASE-SETUP.md §7):
+#   a service account with roles/firebaserules.admin + roles/firebase.developAdmin,
+#   with its JSON key stored as the repository secret FIREBASE_SERVICE_ACCOUNT.
+#
+# Authentication uses a service account rather than the deprecated
+# `firebase login:ci` / FIREBASE_TOKEN flow.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "firestore.rules"
+      - "storage.rules"
+      - "firebase.json"
+      - ".firebaserc"
+      - "tests/rules/**"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/deploy-firebase-rules.yml"
+  workflow_dispatch:
+
+# Never run two rules deploys at once; a later push should win.
+concurrency:
+  group: firebase-rules
+  cancel-in-progress: false
+
+jobs:
+  # Never publish rules that fail their own unit tests. The emulator needs no
+  # credentials, so this job runs even on a fork or before the secret exists.
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - run: npm install
+
+      - name: Run Firestore and Storage rules unit tests
+        run: npm test
+
+  deploy:
+    needs: test
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Fail early if the service account secret is missing
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          if [ -z "$SA" ]; then
+            echo "::error::Repository secret FIREBASE_SERVICE_ACCOUNT is not set."
+            echo "Create it per setup/FIREBASE-SETUP.md section 7 before merging rules changes."
+            exit 1
+          fi
+
+      - name: Write service account credentials
+        env:
+          SA: ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+        run: |
+          umask 077
+          printf '%s' "$SA" > "${RUNNER_TEMP}/firebase-sa.json"
+          # Validate it parses before handing it to the CLI, so a bad paste
+          # produces a clear error instead of an opaque auth failure.
+          node -e "JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'))" \
+            "${RUNNER_TEMP}/firebase-sa.json"
+
+      - name: Deploy Firestore and Storage rules
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ runner.temp }}/firebase-sa.json
+        run: |
+          npx --yes firebase-tools@15 deploy \
+            --only firestore:rules,storage \
+            --project mobileapp-3dcda \
+            --non-interactive
+
+      - name: Remove credentials
+        if: always()
+        run: rm -f "${RUNNER_TEMP}/firebase-sa.json"

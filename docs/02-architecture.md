@@ -74,11 +74,22 @@ knowledge by design for this demo. Instead:
 ├── /scripts
 │   └── screenshot.mjs           # Playwright script for the visual QA loop — dev tool only,
 │                                # never referenced by the live app, see docs/07
+├── /tests
+│   └── /rules                   # unit tests for the two rules files, run against the
+│                                # Firebase emulator — dev only, `npm test`
+├── /.github/workflows
+│   └── deploy-firebase-rules.yml # tests then deploys both rulesets on push to main
 ├── docs/                        # this design bible — ships in the repo but is not part of
 │                                # the live app; useful for the ELT/dev team to browse too
-└── firestore.rules              # security rules Claude Code pushes via Firebase CLI/console
-                                  # per setup/FIREBASE-SETUP.md's handoff point
+├── firebase.json, .firebaserc   # which rules files deploy, and to which project
+├── cors.json                    # bucket CORS, applied by hand only if needed (§8 of setup)
+├── storage.rules                # Cloud Storage rules — claim photo uploads
+└── firestore.rules              # Firestore security rules
 ```
+
+`firestore.rules` and `storage.rules` are drafted by Claude Code and deployed by the
+GitHub Actions workflow above — Claude Code has no Firebase credentials and cannot deploy
+them directly. See `setup/FIREBASE-SETUP.md` §7 for the one-time service-account setup.
 
 Adjust file-per-screen granularity as needed once you see how much markup each section
 actually needs — the important constraint is the top-level shape (root-served static site,
@@ -94,11 +105,21 @@ itself), not the exact file count.
    handles every feature module imports from — don't re-initialize per screen.
 3. Firestore structure is defined in `docs/03-data-model-and-seed-data.md`. Read it in
    full before writing any feature module that touches data.
-4. `firestore.rules` should be drafted by Claude Code and is one of the few things
-   explicitly meant to be pushed by Claude Code (not the human) per
-   `setup/FIREBASE-SETUP.md` — the human's one-time job is initial project creation only.
-5. Claim photo uploads go to Cloud Storage under a path keyed by member ID and claim ID;
+4. `firestore.rules` and `storage.rules` are drafted by Claude Code and deployed by
+   `.github/workflows/deploy-firebase-rules.yml` on push to `main`. The human's one-time
+   jobs are project creation and creating the deploy service account
+   (`setup/FIREBASE-SETUP.md` §7).
+5. Claim photo uploads go to Cloud Storage at `claims/{userId}/{claimId}/{fileName}`;
    store the resulting download URL on the claim's Firestore document, not the raw file.
+   File names must be unique per upload — `storage.rules` makes a claim photo write-once,
+   so an overwrite is rejected rather than silently replacing evidence.
+6. **Security posture, stated plainly:** with no Firebase Auth, `request.auth` is always
+   null, so the rules cannot enforce "member A may not write member B's documents." They
+   enforce document shape, enum values, the claim state machine, the non-negative points
+   balance, and gender/DOB immutability — everything that does not require identity. All
+   reads are open, because login queries `users.usernameLower` and the admin console reads
+   every collection from the same anonymous session. Seed fabricated data only. The full
+   reasoning is in the header comment of `firestore.rules` and in `DECISIONS-LOG.md`.
 
 ## Deployment model
 
@@ -108,11 +129,15 @@ itself), not the exact file count.
   non-conflicting branch/folder per whatever the human set up in `setup/GITHUB-SETUP.md`).
 - No CI/build step is required if the no-build-step preference above holds. If Pages is
   configured to build from a branch, a straight static-file push is sufficient.
-- Firebase project's **Authorized domains** (Firebase console → Authentication → Settings,
-  even though real Firebase Auth isn't used, Storage/Firestore web requests still respect
-  this list in some configurations) should include the GitHub Pages domain — flag this to
-  the human if you hit a CORS/permission error that traces back to it, since domain
-  allowlisting is a console-side change outside what Claude Code can do via code alone.
+- Firebase project's **Authorized domains** (Firebase console → Authentication → Settings)
+  should include the GitHub Pages **host** — `<username>.github.io`, not the full URL.
+  Be clear about what this does and doesn't do: it gates Firebase Auth sign-in flows only,
+  and this project has no Firebase Auth. It will never cause or fix a Firestore or Storage
+  error. A Storage upload that fails and *looks* like CORS is almost always a security
+  rules denial (a 403 carries no CORS headers, so the browser mislabels it); genuine
+  bucket-level CORS is handled by `cors.json` and the `gsutil` command in
+  `setup/FIREBASE-SETUP.md` §8, which the human runs since it is project-level cloud
+  config outside the repo.
 
 ## Dev-only screenshot tooling (for the visual QA loop)
 

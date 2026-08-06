@@ -1,0 +1,623 @@
+rules_version = '2';
+
+// =============================================================================
+// Wellabe member-app prototype — Firestore security rules
+// Project: mobileapp-3dcda
+//
+// THREAT MODEL — READ THIS FIRST.
+// This app has NO Firebase Auth by deliberate design (docs/02-architecture.md
+// §"Why no real Firebase Auth"). request.auth is null on every single request.
+// Therefore these rules CANNOT enforce "member A may not write member B's
+// documents" — there is no identity to scope a write to. Anyone who can reach
+// the site can perform any write that satisfies the shape and state-machine
+// checks below, on any member's behalf.
+//
+// docs/02-architecture.md asks for both "no real Firebase Auth" and per-member
+// write scoping in the same paragraph. Those two requirements are incompatible,
+// and this file resolves the conflict in the only honest direction available:
+// it enforces everything enforceable without identity, and does not pretend to
+// enforce ownership. See DECISIONS-LOG.md §Feature-level judgment calls.
+//
+// What these rules DO enforce, and enforce well:
+//   * document shape: required fields, no unknown fields, types, enums, ranges
+//   * state machines: claim status only advances Intake->Processing->Reviewing
+//     ->Paid|Denied, never backward, never skipping
+//   * conditional integrity: deniedReason iff Denied, paidAmount iff Paid,
+//     resultingPaidThroughDate iff payment succeeded
+//   * value floors: rewards pointsBalance can never go negative
+//   * field-level immutability: gender/dob are not plain-field-editable; role
+//     cannot be self-promoted to admin; a claim photo is write-once
+//   * collection-level read-only: rewardsCatalog and careProviders are writable
+//     only while seed mode is on
+//   * a human-gated seed switch (see seedMode()) so the client-side seeder can
+//     do things the app itself may never do
+//   * a hard write sunset so an abandoned demo project stops accepting writes
+//
+// All reads are open. That is forced by two requirements that cannot be met any
+// other way: login is a client-side query against users.usernameLower, and the
+// admin console reads every collection for every member from the same anonymous
+// session. Consequences: seed only fabricated data (no real person's DOB,
+// address or card digits), turn on App Check, and delete the Firebase project
+// when the demo tour is over.
+// =============================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------------------------------------------------------------------
+    // 0. GLOBAL GATES
+    // ---------------------------------------------------------------------
+
+    // Hard write sunset. After this date the prototype becomes read-only rather
+    // than silently accumulating writes on a forgotten project. Reads are
+    // intentionally NOT gated, so an expired demo still renders instead of
+    // exploding with permission errors mid-presentation.
+    // Adjust to a date comfortably past the last planned ELT demo.
+    function beforeSunset() {
+      return request.time < timestamp.date(2027, 3, 31);
+    }
+
+    // Seed mode. assets/js/seed.js is a CLIENT-SIDE browser script with exactly
+    // the same (zero) privileges as the app, so the rules cannot identify it.
+    // Instead we gate the seeder's extra powers on a config document that NO
+    // client can read or write (see the /_config match block below) — a
+    // rules-internal get() bypasses rules, so this flag is readable here while
+    // being settable only from the Firebase console / Admin SDK, i.e. by a human.
+    //
+    // To seed:  console -> Firestore -> _config/seed -> enabled = true,
+    //           expiresAt = now + 1 hour  ->  run the seed page  ->  enabled = false
+    // The expiresAt field means a forgotten flag closes itself.
+    //
+    // COST: up to 4 document access calls. A single-document write gets a budget
+    // of 10, so that is fine — but A BATCHED WRITE OR TRANSACTION SHARES A BUDGET
+    // OF 20 ACROSS THE WHOLE BATCH. seed.js must therefore use individual
+    // setDoc() calls, never writeBatch()/runTransaction(). Because seedMode()
+    // always sits behind `||`, and rules short-circuit, the normal app path
+    // evaluates it zero times — the app may batch freely.
+    function seedMode() {
+      let p = /databases/$(database)/documents/_config/seed;
+      return exists(p)
+        && get(p).data.keys().hasAll(['enabled', 'expiresAt'])
+        && get(p).data.enabled == true
+        && request.time < get(p).data.expiresAt;
+    }
+
+    // ---------------------------------------------------------------------
+    // 1. SMALL PREDICATES
+    // ---------------------------------------------------------------------
+
+    // Doc IDs are fixed and predictable per docs/03 (user-dave, user-admin, ...).
+    // This is the closest thing to referential integrity we can afford: it costs
+    // zero document access calls, unlike exists(/users/$(id)), which would eat
+    // the batch budget and impose write-ordering constraints on the app.
+    function isMemberId(id) {
+      return id is string && id.matches('user-[a-z0-9-]{1,40}');
+    }
+
+    function isYmd(v) {
+      return v is string && v.matches('[0-9]{4}-[0-9]{2}-[0-9]{2}');
+    }
+
+    function isText(v, max) {
+      return v is string && v.size() > 0 && v.size() <= max;
+    }
+
+    function isTextOrEmpty(v, max) {
+      return v is string && v.size() <= max;
+    }
+
+    // Only these keys may differ between the stored doc and the incoming doc.
+    // NOTE: a key rewritten with an identical value is NOT "affected", so a
+    // byte-identical re-run of seed.js passes even these strict update rules.
+    // Only genuinely changed/added/removed keys need seed mode. This is what
+    // makes docs/03's idempotency requirement work without the console switch.
+    function onlyChanged(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+
+    function products() {
+      return ['medSupp', 'hospitalIndemnity', 'dental',
+              'shortTermCare', 'criticalIllness', 'preneed'];
+    }
+
+    // ---------------------------------------------------------------------
+    // 2. users/{userId}
+    //    Read-open (login lookup + admin console both require it).
+    //    Created only during seeding: this is a closed set of 8 members + admin.
+    //    Updatable only across the freely-editable MyInformation fields.
+    // ---------------------------------------------------------------------
+
+    function addressValid(a) {
+      return a is map
+        && a.keys().hasAll(['street', 'city', 'state', 'zip'])
+        && a.keys().hasOnly(['street', 'city', 'state', 'zip'])
+        && isText(a.street, 120)
+        && isText(a.city, 80)
+        && a.state is string && a.state.matches('[A-Za-z]{2}')
+        && a.zip is string && a.zip.matches('[0-9]{5}(-[0-9]{4})?');
+    }
+
+    function cardValid(c) {
+      return c is map
+        && c.keys().hasAll(['brand', 'last4', 'expMonth', 'expYear'])
+        && c.keys().hasOnly(['brand', 'last4', 'expMonth', 'expYear'])
+        && isText(c.brand, 30)
+        && c.last4 is string && c.last4.matches('[0-9]{4}')
+        && c.expMonth is number && c.expMonth >= 1 && c.expMonth <= 12
+        && c.expYear is number && c.expYear >= 2024 && c.expYear <= 2100;
+    }
+
+    function bankValid(b) {
+      return b is map
+        && b.keys().hasAll(['bankName', 'last4'])
+        && b.keys().hasOnly(['bankName', 'last4'])
+        && isText(b.bankName, 60)
+        && b.last4 is string && b.last4.matches('[0-9]{4}');
+    }
+
+    function userValid(d) {
+      return d.keys().hasAll(['firstName', 'usernameLower', 'role', 'email',
+                              'phone', 'preferredContactMethod', 'address',
+                              'createdAt'])
+        && d.keys().hasOnly(['firstName', 'usernameLower', 'role', 'gender',
+                             'dob', 'email', 'phone', 'preferredContactMethod',
+                             'address', 'cardOnFile', 'bankAccountOnFile',
+                             'createdAt'])
+        && isText(d.firstName, 60)
+        && isText(d.usernameLower, 60)
+        && d.usernameLower == d.usernameLower.lower()
+        && d.role in ['member', 'admin']
+        && isTextOrEmpty(d.email, 200)
+        && isTextOrEmpty(d.phone, 40)
+        && d.preferredContactMethod in ['email', 'phone', 'mail']
+        && addressValid(d.address)
+        // gender/dob are optional so the admin doc can stay minimal per docs/03.
+        && (!('gender' in d) || d.gender == null || isText(d.gender, 40))
+        && (!('dob' in d) || d.dob == null || isYmd(d.dob))
+        && (!('cardOnFile' in d) || d.cardOnFile == null || cardValid(d.cardOnFile))
+        && (!('bankAccountOnFile' in d) || d.bankAccountOnFile == null
+            || bankValid(d.bankAccountOnFile))
+        && d.createdAt is timestamp;
+    }
+
+    match /users/{userId} {
+      // Open read is unavoidable: auth.js queries usernameLower, and the admin
+      // console lists every member. This exposes every seeded member's fake DOB,
+      // address and card last-4 to the world. Seed fabricated data only.
+      allow read: if true;
+
+      // Optional hardening, ONLY once every list query in the app passes an
+      // explicit .limit(): uncomment these and delete the blanket read above.
+      //   allow get: if true;
+      //   allow list: if request.query.limit != null && request.query.limit <= 100;
+
+      allow create: if beforeSunset()
+                    && isMemberId(userId)
+                    && userValid(request.resource.data)
+                    && seedMode();
+
+      // GUARDRAIL (docs/04 §MyInformation): gender, dob, role, usernameLower,
+      // firstName and createdAt are absent from this list, so no client write
+      // can touch them. The "request a change" flow writes to /changeRequests
+      // instead. userId is the document ID, so it is immutable by construction.
+      allow update: if beforeSunset()
+                    && userValid(request.resource.data)
+                    && (onlyChanged(['email', 'phone', 'preferredContactMethod',
+                                     'address', 'cardOnFile', 'bankAccountOnFile'])
+                        || seedMode());
+
+      allow delete: if beforeSunset() && seedMode();
+    }
+
+    // ---------------------------------------------------------------------
+    // 3. policies/{policyId}
+    // ---------------------------------------------------------------------
+
+    function policyValid(d) {
+      return d.keys().hasAll(['userId', 'product', 'planName', 'policyNumber',
+                              'status', 'effectiveDate', 'paidThroughDate',
+                              'premiumAmount', 'premiumFrequency',
+                              'autopayEnabled', 'coverageSummary', 'whatItCovers'])
+        && d.keys().hasOnly(['userId', 'product', 'planName', 'policyNumber',
+                             'status', 'effectiveDate', 'paidThroughDate',
+                             'premiumAmount', 'premiumFrequency',
+                             'autopayEnabled', 'coverageSummary', 'whatItCovers',
+                             'guaranteedIssue'])
+        && isMemberId(d.userId)
+        && d.product in products()
+        && isText(d.planName, 120)
+        && d.policyNumber is string && d.policyNumber.matches('[A-Z0-9-]{4,32}')
+        && d.status in ['active', 'lapsed']
+        && isYmd(d.effectiveDate)
+        && isYmd(d.paidThroughDate)
+        && d.premiumAmount is number && d.premiumAmount >= 0
+                                     && d.premiumAmount <= 100000
+        && d.premiumFrequency in ['monthly', 'quarterly', 'annual']
+        && d.autopayEnabled is bool
+        && isText(d.coverageSummary, 600)
+        && d.whatItCovers is list && d.whatItCovers.size() <= 20
+        && (!('guaranteedIssue' in d) || d.guaranteedIssue is bool);
+    }
+
+    match /policies/{policyId} {
+      allow read: if true;
+
+      // The "Add More Coverage" / guaranteed-issue enrollment flow ends in a real
+      // policy document so the new coverage visibly appears in MyCoverages.
+      allow create: if beforeSunset() && policyValid(request.resource.data);
+
+      // Only the three fields the app legitimately mutates: a successful payment
+      // pushes paidThroughDate, the status pill follows it, autopay toggles.
+      // paidThroughDate is monotonic — YYYY-MM-DD strings sort chronologically,
+      // so a plain string >= comparison enforces "coverage never rewinds".
+      // (Rolling a demo back to seed state therefore needs seed mode. Intended.)
+      allow update: if beforeSunset()
+                    && policyValid(request.resource.data)
+                    && ((onlyChanged(['paidThroughDate', 'status', 'autopayEnabled'])
+                         && request.resource.data.paidThroughDate
+                            >= resource.data.paidThroughDate)
+                        || seedMode());
+
+      allow delete: if beforeSunset() && seedMode();
+    }
+
+    // ---------------------------------------------------------------------
+    // 4. payments/{paymentId} — an append-only ledger
+    // ---------------------------------------------------------------------
+
+    function paymentValid(d) {
+      return d.keys().hasAll(['userId', 'policyId', 'amount', 'method',
+                              'last4', 'status', 'timestamp'])
+        && d.keys().hasOnly(['userId', 'policyId', 'amount', 'method', 'last4',
+                             'status', 'resultingPaidThroughDate', 'timestamp'])
+        && isMemberId(d.userId)
+        && isText(d.policyId, 80)
+        && d.amount is number && d.amount > 0 && d.amount <= 100000
+        && d.method in ['card', 'bank']
+        && d.last4 is string && d.last4.matches('[0-9]{4}')
+        && d.status in ['success', 'failed']
+        // INVARIANT (docs/03): resultingPaidThroughDate is a well-formed date on
+        // success, and must be absent or null on failure.
+        && (d.status == 'success'
+              ? ('resultingPaidThroughDate' in d
+                 && isYmd(d.resultingPaidThroughDate))
+              : (!('resultingPaidThroughDate' in d)
+                 || d.resultingPaidThroughDate == null))
+        && d.timestamp is timestamp;
+    }
+
+    match /payments/{paymentId} {
+      allow read: if true;
+
+      // NOT ENFORCED HERE, deliberately: "last4 must match
+      // users/{userId}.cardOnFile.last4". That needs a get() on another document
+      // from inside a write rule — it eats the batch access-call budget, it reads
+      // pre-transaction state (so "update card, then pay" fails mysteriously),
+      // it needs defensive null handling for members with no card on file, and
+      // it is bypassable anyway by writing status:"failed" with any last4. The
+      // card-match acceptance criterion in docs/04 stays a client-side check in
+      // my-payments.js. What the rules guarantee instead is the part that
+      // actually protects data integrity: a FAILED payment can never carry a
+      // resultingPaidThroughDate, so a spoofed failure cannot extend coverage.
+      allow create: if beforeSunset() && paymentValid(request.resource.data);
+
+      allow update: if beforeSunset() && seedMode()
+                    && paymentValid(request.resource.data);
+      allow delete: if beforeSunset() && seedMode();
+    }
+
+    // ---------------------------------------------------------------------
+    // 5. claims/{claimId} — the tracker, enforced as a real state machine
+    // ---------------------------------------------------------------------
+
+    // GUARDRAILS (docs/03, docs/04 §MyClaims).
+    function claimConsistent(d) {
+      return (d.status == 'Denied'
+                ? ('deniedReason' in d && isText(d.deniedReason, 1000))
+                : (!('deniedReason' in d) || d.deniedReason == null))
+        && (d.status == 'Paid'
+                ? ('paidAmount' in d && d.paidAmount is number
+                   && d.paidAmount >= 0 && d.paidAmount <= 1000000)
+                : (!('paidAmount' in d) || d.paidAmount == null));
+    }
+
+    function claimValid(d) {
+      return d.keys().hasAll(['userId', 'policyId', 'product', 'claimNumber',
+                              'description', 'status', 'statusHistory',
+                              'submittedAt'])
+        && d.keys().hasOnly(['userId', 'policyId', 'product', 'claimNumber',
+                             'description', 'photoUrl', 'status',
+                             'statusHistory', 'deniedReason', 'paidAmount',
+                             'submittedAt'])
+        && isMemberId(d.userId)
+        && isText(d.policyId, 80)
+        && d.product in products()
+        && d.claimNumber is string && d.claimNumber.matches('CLM-[0-9]{4}-[0-9]{4,6}')
+        && isText(d.description, 2000)
+        && (!('photoUrl' in d) || d.photoUrl == null
+            || (isText(d.photoUrl, 2000) && d.photoUrl.matches('https://.*')))
+        && d.status in ['Intake', 'Processing', 'Reviewing', 'Paid', 'Denied']
+        && d.statusHistory is list
+        && d.statusHistory.size() >= 1 && d.statusHistory.size() <= 8
+        && d.submittedAt is timestamp
+        && claimConsistent(d);
+    }
+
+    // Forward-only, no skipping, terminal states are terminal.
+    function claimAdvance(from, to) {
+      return from == to
+        || (from == 'Intake'     && to == 'Processing')
+        || (from == 'Processing' && to == 'Reviewing')
+        || (from == 'Reviewing'  && (to == 'Paid' || to == 'Denied'));
+    }
+
+    // statusHistory must grow by exactly one entry when the status changes, and
+    // must not change at all when it does not. Keeps the tracker UI honest.
+    function historyAppended() {
+      return request.resource.data.status == resource.data.status
+        ? request.resource.data.statusHistory.size()
+            == resource.data.statusHistory.size()
+        : (request.resource.data.statusHistory.size()
+             == resource.data.statusHistory.size() + 1
+           // my-claims.js should write the full statusHistory array explicitly
+           // rather than using arrayUnion(). If arrayUnion() is used and this
+           // produces unexpected denials, delete the next line — the size check
+           // above still carries the invariant.
+           && request.resource.data.statusHistory[resource.data.statusHistory.size()]
+                .status == request.resource.data.status);
+    }
+
+    match /claims/{claimId} {
+      allow read: if true;
+
+      // GUARDRAIL (CLAUDE.md): no claim skips intake state. The app may only
+      // ever open a claim at Intake with a one-entry history. seed.js needs Sara
+      // at Processing, Todd at Paid, Debbie at Denied and Matt at Paid+Reviewing,
+      // so mid-stream creation is the one thing seed mode unlocks here. Note that
+      // claimConsistent() still applies in seed mode: seed mode relaxes
+      // LIFECYCLE, never CONSISTENCY.
+      allow create: if beforeSunset()
+                    && claimValid(request.resource.data)
+                    && ((request.resource.data.status == 'Intake'
+                         && request.resource.data.statusHistory.size() == 1
+                         && !('paidAmount' in request.resource.data
+                              && request.resource.data.paidAmount != null))
+                        || seedMode());
+
+      // photoUrl is write-once: it may be attached after the doc is created
+      // (create claim -> upload photo -> patch URL) but never swapped afterwards.
+      allow update: if beforeSunset()
+                    && claimValid(request.resource.data)
+                    && ((onlyChanged(['status', 'statusHistory', 'deniedReason',
+                                      'paidAmount', 'photoUrl'])
+                         && claimAdvance(resource.data.status,
+                                         request.resource.data.status)
+                         && historyAppended()
+                         && (!request.resource.data.diff(resource.data)
+                                .affectedKeys().hasAny(['photoUrl'])
+                             || !('photoUrl' in resource.data)
+                             || resource.data.photoUrl == null))
+                        || seedMode());
+
+      allow delete: if beforeSunset() && seedMode();
+    }
+
+    // ---------------------------------------------------------------------
+    // 6. rewardsAccounts/{userId} — doc ID IS the userId
+    // ---------------------------------------------------------------------
+
+    function rewardsAccountValid(d, accountId) {
+      // GUARDRAIL (docs/03, called out by name): pointsBalance can never be
+      // negative, on create or update. This holds even when the client uses
+      // increment(-cost) — Firestore applies numeric transforms before evaluating
+      // request.resource, so the rule sees the resulting balance.
+      return d.keys().hasAll(['pointsBalance', 'tier'])
+        && d.keys().hasOnly(['pointsBalance', 'tier', 'userId',
+                             'lifetimePointsEarned'])
+        && d.pointsBalance is number
+        && d.pointsBalance >= 0
+        && d.pointsBalance <= 1000000
+        && d.tier in ['Bronze', 'Silver', 'Gold']
+        // Self-consistency: the userId field, if present, must equal the doc ID.
+        // This is the ONLY form of "scoped to its own memberId" that exists here
+        // — it prevents a mislabelled document, NOT an unauthorised author.
+        && (!('userId' in d) || d.userId == accountId)
+        // tier derives from lifetime points earned, not current balance (docs/03),
+        // so the ledger total is stored alongside the spendable balance.
+        && (!('lifetimePointsEarned' in d)
+            || (d.lifetimePointsEarned is number && d.lifetimePointsEarned >= 0));
+    }
+
+    match /rewardsAccounts/{accountId} {
+      allow read: if true;
+
+      allow create: if beforeSunset()
+                    && isMemberId(accountId)
+                    && rewardsAccountValid(request.resource.data, accountId);
+
+      allow update: if beforeSunset()
+                    && rewardsAccountValid(request.resource.data, accountId)
+                    && (onlyChanged(['pointsBalance', 'tier',
+                                     'lifetimePointsEarned'])
+                        || seedMode());
+
+      allow delete: if beforeSunset() && seedMode();
+    }
+
+    // ---------------------------------------------------------------------
+    // 7. rewardsTransactions/{txId} — append-only ledger
+    //     Shared with MyHealth: health points write into this same ledger, they
+    //     are not a separate currency (docs/05).
+    // ---------------------------------------------------------------------
+
+    function rewardsTxValid(d) {
+      return d.keys().hasAll(['userId', 'type', 'amount', 'reason', 'timestamp'])
+        && d.keys().hasOnly(['userId', 'type', 'amount', 'reason', 'timestamp'])
+        && isMemberId(d.userId)
+        && d.type in ['earn', 'spend']
+        // Sign lives in `type`, never in `amount`.
+        && d.amount is number && d.amount > 0 && d.amount <= 100000
+        && isText(d.reason, 200)
+        && d.timestamp is timestamp;
+    }
+
+    match /rewardsTransactions/{txId} {
+      allow read: if true;
+      allow create: if beforeSunset() && rewardsTxValid(request.resource.data);
+      allow update: if beforeSunset() && seedMode()
+                    && rewardsTxValid(request.resource.data);
+      allow delete: if beforeSunset() && seedMode();
+    }
+
+    // ---------------------------------------------------------------------
+    // 8. Shared reference data — read-only for the app, seed-writable only.
+    //     No shape validation: once a write is gated behind a console-only flag,
+    //     field-level validation buys nothing and only risks blocking the seeder.
+    // ---------------------------------------------------------------------
+
+    match /rewardsCatalog/{itemId} {
+      allow read: if true;
+      allow write: if beforeSunset() && seedMode();
+    }
+
+    match /careProviders/{providerId} {
+      allow read: if true;
+      allow write: if beforeSunset() && seedMode();
+    }
+
+    // ---------------------------------------------------------------------
+    // 9. healthProfiles/{userId} — doc ID IS the userId
+    // ---------------------------------------------------------------------
+
+    function healthProfileValid(d, profileId) {
+      return d.keys().hasAll(['currentStreakDays', 'longestStreakDays', 'badges',
+                              'challengeDaysCompletedInWindow',
+                              'qualifiesForGuaranteedIssue',
+                              'guaranteedIssueOfferShown'])
+        && d.keys().hasOnly(['currentStreakDays', 'longestStreakDays', 'badges',
+                             'challengeDaysCompletedInWindow',
+                             'qualifiesForGuaranteedIssue',
+                             'guaranteedIssueOfferShown', 'connectedTracker',
+                             'userId'])
+        && d.currentStreakDays is number
+        && d.currentStreakDays >= 0 && d.currentStreakDays <= 3650
+        && d.longestStreakDays is number
+        // A longest streak shorter than the current one is nonsense data.
+        && d.longestStreakDays >= d.currentStreakDays
+        && d.longestStreakDays <= 3650
+        && d.badges is list && d.badges.size() <= 50
+        && d.challengeDaysCompletedInWindow is number
+        && d.challengeDaysCompletedInWindow >= 0
+        && d.challengeDaysCompletedInWindow <= 100
+        && d.qualifiesForGuaranteedIssue is bool
+        && d.guaranteedIssueOfferShown is bool
+        && (!('connectedTracker' in d) || d.connectedTracker == null
+            || isText(d.connectedTracker, 80))
+        && (!('userId' in d) || d.userId == profileId);
+      // NOT enforced: qualifiesForGuaranteedIssue == (challengeDays >= 80).
+      // Enforcing a derived flag would couple the rules to the client's field
+      // update ordering and turn a cosmetic client bug into a hard write failure
+      // mid-demo. my-health.js owns that derivation.
+    }
+
+    match /healthProfiles/{profileId} {
+      allow read: if true;
+
+      allow create: if beforeSunset()
+                    && isMemberId(profileId)
+                    && healthProfileValid(request.resource.data, profileId);
+
+      // longestStreakDays is monotonic: a personal best is never taken away.
+      allow update: if beforeSunset()
+                    && healthProfileValid(request.resource.data, profileId)
+                    && (request.resource.data.longestStreakDays
+                          >= resource.data.longestStreakDays
+                        || seedMode());
+
+      allow delete: if beforeSunset() && seedMode();
+    }
+
+    // ---------------------------------------------------------------------
+    // 10. healthDailyLog/{userId}_{date} — composite document ID
+    // ---------------------------------------------------------------------
+
+    function dailyLogValid(d) {
+      return d.keys().hasAll(['userId', 'date', 'challengesCompleted',
+                              'pointsEarned'])
+        && d.keys().hasOnly(['userId', 'date', 'challengesCompleted',
+                             'pointsEarned'])
+        && isMemberId(d.userId)
+        && isYmd(d.date)
+        && d.challengesCompleted is list
+        && d.challengesCompleted.size() <= 5
+        && d.pointsEarned is number
+        && d.pointsEarned >= 0 && d.pointsEarned <= 1000;
+      // Once the 5 challenge IDs are fixed in my-health.js, tighten with:
+      //   && d.challengesCompleted.hasOnly(['steps5k', 'calories400',
+      //        'stairs10', 'activity10min', 'mindfulness'])
+    }
+
+    match /healthDailyLog/{logId} {
+      allow read: if true;
+
+      // The composite ID must equal userId + "_" + date on every write, which
+      // makes both fields immutable for free and blocks a log document that
+      // claims one member in its ID and another in its body.
+      allow create, update: if beforeSunset()
+                            && dailyLogValid(request.resource.data)
+                            && logId == request.resource.data.userId + '_'
+                                        + request.resource.data.date;
+
+      allow delete: if beforeSunset() && seedMode();
+    }
+
+    // ---------------------------------------------------------------------
+    // 11. changeRequests/{requestId}
+    //     Backs the MyInformation gender/DOB "Start a Request" flow (docs/04
+    //     §MyInformation, which requires the action to log a request record but
+    //     does not name a collection). Append-only. The `field` enum makes the
+    //     guardrail visible in the data layer: this collection can only ever be
+    //     about gender or dob.
+    // ---------------------------------------------------------------------
+
+    function changeRequestValid(d) {
+      return d.keys().hasAll(['userId', 'field', 'currentValue',
+                              'requestedValue', 'status', 'submittedAt'])
+        && d.keys().hasOnly(['userId', 'field', 'currentValue',
+                             'requestedValue', 'status', 'note', 'submittedAt'])
+        && isMemberId(d.userId)
+        && d.field in ['gender', 'dob']
+        && isTextOrEmpty(d.currentValue, 100)
+        && isText(d.requestedValue, 100)
+        && d.status in ['open', 'closed']
+        && (!('note' in d) || d.note == null || isTextOrEmpty(d.note, 1000))
+        && d.submittedAt is timestamp;
+    }
+
+    match /changeRequests/{requestId} {
+      allow read: if true;
+      allow create: if beforeSunset()
+                    && changeRequestValid(request.resource.data)
+                    && (request.resource.data.status == 'open' || seedMode());
+      allow update, delete: if beforeSunset() && seedMode();
+    }
+
+    // ---------------------------------------------------------------------
+    // 12. _config/{docId} — the seed switch. Console / Admin SDK only.
+    //     A rules-internal get() ignores these rules, so seedMode() still works
+    //     while no client can read the flag, let alone flip it.
+    // ---------------------------------------------------------------------
+
+    match /_config/{docId} {
+      allow read, write: if false;
+    }
+
+    // ---------------------------------------------------------------------
+    // 13. Everything else is denied by default — there is deliberately no
+    //     wildcard match here. Adding `match /{document=**} { allow read,
+    //     write: if false; }` would be pure decoration: Firestore ORs all
+    //     matching allow rules, so a wildcard deny cannot revoke an allow
+    //     granted above. Absence of an allow rule IS the denial.
+    // ---------------------------------------------------------------------
+  }
+}
