@@ -7,6 +7,7 @@ import {
   formatDate,
   formatMoney,
   PRODUCT_LABELS,
+  amountDue,
   toYmd,
   addMonths,
   startOfToday,
@@ -185,7 +186,10 @@ function listView(policies, user, health, today) {
           : 'You already hold all six Wellabe product lines.'}
       </p>
       ${available.length
-        ? html`<button class="btn btn--primary btn--block" data-view="add">
+        ? html`<button
+            class="btn btn--${policies.some((p) => coverageStatus(p, today).key !== 'active') ? 'secondary' : 'primary'} btn--block"
+            data-view="add"
+          >
             ${icons.plus()} See what else you can add
           </button>`
         : ''}
@@ -208,6 +212,13 @@ function policyCard(policy, today) {
     <p>${esc(policy.coverageSummary)}</p>
     ${dataRow('Policy number', policy.policyNumber)}
     ${dataRow('Paid through', formatDate(policy.paidThroughDate))}
+    ${status.key !== 'active'
+      ? html`<a
+          class="btn btn--primary btn--block"
+          href="my-payments.html?policy=${esc(policy.id)}"
+          >Pay ${formatMoney(amountDue(policy, today).amount)} to restore this coverage</a
+        >`
+      : ''}
     <div style="display:flex;gap:var(--space-2);flex-wrap:wrap">
       <button class="btn btn--primary" data-view="card" data-policy="${esc(policy.id)}">
         View ID card

@@ -292,7 +292,7 @@ function noticesTab(notices, attention) {
           )}
         </div>`
       : html`<div class="notice-banner notice-banner--info">
-          ${icons.checkCircle()}<span>You're all caught up.</span>
+          ${icons.checkCircle()}<span>Nothing needs your attention right now.</span>
         </div>`}
 
     <div class="stack-sm">

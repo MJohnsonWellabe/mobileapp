@@ -120,16 +120,17 @@ export function watchMailboxBadge(userId) {
   const badge = document.querySelector('[data-shell="badge"]');
   if (!badge) return () => {};
 
+  // Unread notices only. An earlier version added the derived attention items on
+  // top, which made the badge disagree with the MyMailbox card on the same screen.
   let unread = 0;
-  let attention = 0;
 
   const paint = () => {
-    const total = unread + attention;
+    const total = unread;
     badge.hidden = total === 0;
     badge.textContent = total > 9 ? '9+' : String(total);
     document
       .querySelector('[data-shell="mailbox"]')
-      ?.setAttribute('aria-label', total ? `MyMailbox, ${total} needing attention` : 'MyMailbox');
+      ?.setAttribute('aria-label', total ? `MyMailbox, ${total} unread` : 'MyMailbox');
   };
 
   const stopNotices = subscribeNotices(
@@ -141,19 +142,7 @@ export function watchMailboxBadge(userId) {
     () => {},
   );
 
-  const stopPolicies = subscribePolicies(
-    userId,
-    async (policies) => {
-      attention = attentionItems({ policies, user: window.__wellabeUser }).length;
-      paint();
-    },
-    () => {},
-  );
-
-  return () => {
-    stopNotices();
-    stopPolicies();
-  };
+  return stopNotices;
 }
 
 /** Registered by _page.js. Returns true when it consumed the Back press. */

@@ -120,7 +120,10 @@ function claimRow(claim, policies) {
       </div>
       <span class="pill pill--${s.tone}">${icons[s.icon]()}${esc(s.label)}</span>
     </div>
-    <div class="card__meta">Filed ${formatDate(claim.submittedAt)}</div>
+    <div style="display:flex;align-items:center;gap:var(--space-2)">
+      <span class="card__meta" style="flex:1">${esc(s.summary)} · filed ${formatDate(claim.submittedAt)}</span>
+      <span style="color:var(--color-text-secondary);flex:none">${icons.chevronRight()}</span>
+    </div>
   </button>`;
 }
 
@@ -383,11 +386,14 @@ async function submitClaim(event, form, ctx, getState) {
 
 function statusPill(status) {
   return {
-    Intake: { label: 'Intake', tone: 'info', icon: 'clock' },
-    Processing: { label: 'Processing', tone: 'info', icon: 'clock' },
-    Reviewing: { label: 'In review', tone: 'warning', icon: 'clock' },
-    Paid: { label: 'Paid', tone: 'success', icon: 'checkCircle' },
-    Denied: { label: 'Denied', tone: 'danger', icon: 'alert' },
+    // "Reviewing" everywhere — the pill, the tracker and the notice used to say
+    // three different words for one stage. And an in-progress claim is not a
+    // warning: only Denied gets an alarming tone.
+    Intake: { label: 'Intake', tone: 'info', icon: 'clock', summary: 'We have it' },
+    Processing: { label: 'Processing', tone: 'info', icon: 'clock', summary: 'Being worked on' },
+    Reviewing: { label: 'Reviewing', tone: 'info', icon: 'clock', summary: 'Last stage before a decision' },
+    Paid: { label: 'Paid', tone: 'success', icon: 'checkCircle', summary: 'Resolved and paid' },
+    Denied: { label: 'Denied', tone: 'danger', icon: 'alert', summary: "Tap to see why, and what you can do" },
   }[status];
 }
 

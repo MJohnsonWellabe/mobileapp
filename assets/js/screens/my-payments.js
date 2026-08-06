@@ -157,8 +157,8 @@ function listView(policies, user, payments, today) {
               ? html`<div class="notice-banner notice-banner--danger">
                   ${icons.alert()}
                   <span
-                    >This coverage is past due. Paying ${formatMoney(due.amount)} brings it
-                    back to active.</span
+                    >This coverage is ${status.label.toLowerCase()}. Paying
+                    ${formatMoney(due.amount)} brings it back to active.</span
                   >
                 </div>`
               : ''}

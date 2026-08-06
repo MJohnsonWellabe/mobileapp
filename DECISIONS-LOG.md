@@ -352,9 +352,55 @@ any app code existed.)*
 
 ## Visual QA patterns
 
-*(Recurring issues the `visual-qa-reviewer` subagent flagged more than once, and the fix
-applied so later screens don't repeat them — not a log of every individual screenshot
-review.)*
+**Full-app pass run over 70 screenshots, every screen, both breakpoints, all 8 members plus
+admin. Verdict: FAIL.** Eight blocking findings. Five were fixed; three remain open, along
+with a long tail of notable and minor items. This section is the handoff.
+
+**Fixed:**
+
+- **One state, two words.** April's policy showed a red "Lapsed" pill while the body copy on
+  the same card said "past due", and the home alert said a third thing. These mean different
+  things to a member — past due means pay and you're fine, lapsed means your coverage ended.
+  All copy now derives its wording from the same `coverageStatus()` label as the pill.
+- **"You're all caught up" sat directly above unread notices.** The banner describes the
+  derived attention group, not the inbox, but nothing on screen said so. Reworded to
+  "Nothing needs your attention right now."
+- **The header badge and the MyMailbox card disagreed on the same screen** — 2 versus 1 —
+  because the badge added derived attention items on top of unread notices. The badge now
+  counts unread notices only.
+- **A lapsed policy offered no way out.** MyCoverages gave April "View ID card" and
+  "Details", with a full-width cross-sell as the loudest element on the screen. The policy
+  card now leads with "Pay $174.00 to restore this coverage", and the cross-sell drops to
+  secondary whenever any policy needs attention.
+- **Claim list cards had no affordance and no outcome.** No chevron, no summary — Debbie's
+  card said "Denied" and stopped, with no visible route to the reason or the review action.
+  Cards now carry a chevron and a plain-language outcome line. The same fix settled a naming
+  inconsistency: the pill, tracker and notice used "Processing", "In review" and "Reviewing"
+  for one stage, and an in-progress claim was tinted with the warning token as though
+  something were wrong. Only Denied gets an alarming tone now.
+
+**Still open — worth doing before the demo:**
+
+1. **The bottom tab bar clips on Home at 375px** on every member, showing only the top of
+   each icon and no labels. It renders correctly on the same screens at 430px and on other
+   screens at 375px, so it is specific to the tallest page.
+2. **April's payment history contradicts her balance.** The card says paid through June 6 and
+   asks for $174.00, while the history immediately below shows a successful $58.00 payment on
+   July 6. The seeded history needs to reconcile with the seeded paid-through date.
+3. **Brand yellow is doing status work**, which the design system forbids: the rewards tier
+   chip, the points chips, the streak ring, badge borders, and the admin console's active-tab
+   underline. The rewards tier chip is the worst of these — Bronze, Silver and Gold all
+   render as the same gold pill.
+
+The notable tail, roughly in order of value: Todd's unlocked-offer card is styled the same as
+the routine challenges card directly above it, so the demo's hero moment reads as wallpaper;
+good news and bad news share an icon and the "Needs your attention" heading; the MyCare and
+admin chip strips clip mid-word with no scroll cue; the rewards store re-offers items the
+member already redeemed; "N more earned to reach Silver" never explains that tier runs on
+lifetime points while the big number is spendable balance; the 100-day card never states the
+80-day target; Log Out is styled as a destructive action; the More screen's row layout
+differs from every other list; and the challenge checkboxes look to be under the 48px
+minimum.
 
 ## Closing summary
 

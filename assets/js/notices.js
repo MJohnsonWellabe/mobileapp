@@ -155,7 +155,7 @@ export function attentionItems({ policies = [], user, health, today = startOfTod
       items.push({
         id: `pastdue-${policy.id}`,
         tone: 'danger',
-        title: `Your ${product} coverage is past due`,
+        title: `Your ${product} coverage is ${status.label.toLowerCase()}`,
         body: `Pay ${formatMoney(due.amount)} to bring it back to active.`,
         actionLabel: `Pay ${formatMoney(due.amount)}`,
         actionTarget: `payments?policy=${policy.id}`,
