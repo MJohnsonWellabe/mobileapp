@@ -89,7 +89,7 @@ page({
       </div>
 
       <div class="more-list">
-        <button class="more-row more-row--danger" type="button" data-action="logout">
+        <button class="more-row" type="button" data-action="logout">
           <span class="more-row__icon">${icons.logout()}</span>
           <span class="more-row__body">
             <span class="more-row__label">Log Out</span>

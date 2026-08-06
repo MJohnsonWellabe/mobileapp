@@ -185,7 +185,8 @@ function challengesCard(todayLog, today) {
  *  see docs/05 and DECISIONS-LOG.md for why that phrase is not used on screen. */
 function offerCard(stats, today) {
   const expires = addDays(today, 60);
-  return html`<div class="card card--accent stack-sm">
+  return html`<div class="card card--celebrate stack-sm">
+    <span class="card__eyebrow">${icons.starFilled()} Unlocked</span>
     <h2>You've unlocked a no-health-questions offer</h2>
     <p>
       You've completed ${stats.challengeDaysCompletedInWindow} of the last ${WINDOW_DAYS} days of
@@ -205,9 +206,10 @@ function windowCard(stats) {
   const pct = Math.min(1, stats.challengeDaysCompletedInWindow / WINDOW_QUALIFY_DAYS);
   const toGo = Math.max(0, WINDOW_QUALIFY_DAYS - stats.challengeDaysCompletedInWindow);
   return html`<div class="card stack-sm">
-    <h3 class="card__title">Your 100-day progress</h3>
+    <h3 class="card__title">Your 100-day progress — ${WINDOW_QUALIFY_DAYS} days unlocks an offer</h3>
     <p class="card__meta">
-      ${stats.challengeDaysCompletedInWindow} of the last ${WINDOW_DAYS} days counted.
+      ${stats.challengeDaysCompletedInWindow} of the last ${WINDOW_DAYS} days counted toward the
+      ${WINDOW_QUALIFY_DAYS}-day target.
       ${toGo ? `${plural(toGo, 'more day')} unlocks a no-health-questions coverage offer.` : ''}
     </p>
     <div class="meter"><span class="meter__fill" style="width:${(pct * 100).toFixed(0)}%"></span></div>

@@ -455,15 +455,44 @@ with a long tail of notable and minor items. This section is the handoff.
 **Still open — worth doing before the demo:** none from this pass. See the notable tail
 below.
 
-The notable tail, roughly in order of value: Todd's unlocked-offer card is styled the same as
-the routine challenges card directly above it, so the demo's hero moment reads as wallpaper;
-good news and bad news share an icon and the "Needs your attention" heading; the MyCare and
-admin chip strips clip mid-word with no scroll cue; the rewards store re-offers items the
-member already redeemed; "N more earned to reach Silver" never explains that tier runs on
-lifetime points while the big number is spendable balance; the 100-day card never states the
-80-day target; Log Out is styled as a destructive action; the More screen's row layout
-differs from every other list; and the challenge checkboxes look to be under the 48px
-minimum.
+**The notable tail — all fixed except one, kept deliberately open:**
+
+- **Todd's unlocked-offer card read as wallpaper**, styled identically to the routine
+  yellow challenge card directly above it. New `.card--celebrate` variant (white surface,
+  bold `--color-primary` border, an "UNLOCKED" eyebrow) makes the demo's hero moment
+  actually look like one.
+- **Good news and bad news shared an icon** ("Needs your attention" always showed
+  `icons.alert()`, even for the accent-toned unlocked-offer notice). The accent tone now
+  gets `icons.starFilled()`; warning/danger keep the alert triangle. Fixed in both places
+  this is rendered — `home.js` and `my-mailbox.js` — since the markup was duplicated, not
+  shared.
+- **The MyCare and admin chip/tab strips clipped with no scroll cue.** Both `.chips` and
+  `.admin-tabs` now carry a trailing `mask-image` fade, the same technique iOS/Android use
+  for truncated horizontal lists — no JS scroll-position tracking needed.
+- **The rewards store re-offered items already redeemed.** `storeCard` now takes a
+  `alreadyRedeemed` flag (checked against `spend`-type transactions by reason, the same
+  pattern `earnCard`/`earned` already used for read/watched items) and shows a "Redeemed"
+  pill instead of a buy button.
+- **"N more earned to reach Silver" didn't explain tier vs. balance.** Reworded to "N more
+  *lifetime points*" and added a one-line disclosure: tier tracks lifetime earned and never
+  drops on redemption, the spendable balance above is the separate number that does.
+- **The 100-day card never stated the 80-day target.** Title and body now both name it
+  explicitly ("100-day progress — 80 days unlocks an offer" / "toward the 80-day target").
+- **Log Out was styled as a destructive action** (`.more-row--danger`, red icon/label) on
+  the More screen, which misrepresents it — logging out loses nothing and is one tap to
+  undo. Switched to the plain `.more-row` styling every other row uses. (The `--danger`
+  modifier itself stays in `screens.css` as a reusable primitive; it was just applied to
+  the wrong action.)
+- **The challenge checkbox looked smaller than the 48px minimum.** The real tap target
+  (the full-width `.challenge` button) already met `--tap-target-min`, but the visible
+  glyph was only 28px, which reads as too small regardless of the actual hit area. Sized
+  up to 32px.
+- **Left open, deliberately:** "the More screen's row layout differs from every other
+  list." More is a flat, divided settings-style list (`.more-row`) by design, distinct from
+  the bordered/shadowed `.section-card` dashboard cards on Home — that's a recognized,
+  intentional pattern split (settings list vs. dashboard cards), not obviously a defect.
+  Left for the next full `visual-qa-reviewer` pass to adjudicate with fresh eyes rather than
+  guessing at a restructure the finding didn't specify.
 
 ## Closing summary
 

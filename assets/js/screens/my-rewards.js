@@ -139,13 +139,18 @@ page({
     const earned = new Set(
       transactions.filter((t) => t.type === 'earn').map((t) => t.reason.replace(/^(Watched|Read): /, '')),
     );
+    // A member shouldn't be offered a "Redeem" button for something they already
+    // redeemed (visual QA finding) — one-time rewards, not a subscription re-buy.
+    const redeemed = new Set(
+      transactions.filter((t) => t.type === 'spend').map((t) => t.reason.replace(/^Redeemed: /, '')),
+    );
 
     return html`
       ${balanceCard(account)}
 
       <div class="stack-sm">
         <h2 class="section-heading">Rewards store</h2>
-        ${store.map((item) => storeCard(item, account))}
+        ${store.map((item) => storeCard(item, account, redeemed.has(item.name)))}
       </div>
 
       <div class="stack-sm">
@@ -192,14 +197,18 @@ function balanceCard(account) {
     <div class="tier">
       <span class="pill ${tierPillClass(account.tier)}">${icons.starFilled()}${esc(account.tier ?? 'Bronze')}</span>
       ${next
-        ? html`<span class="card__meta">${formatPoints(toGo)} more earned to reach ${next}</span>`
+        ? html`<span class="card__meta">${formatPoints(toGo)} more lifetime points to reach ${next}</span>`
         : html`<span class="card__meta">You're at the top tier.</span>`}
     </div>
     <div class="meter"><span class="meter__fill" style="width:${(pct * 100).toFixed(0)}%"></span></div>
+    <p class="disclosure">
+      Tier is based on lifetime points earned (${formatPoints(lifetime)} so far) and never goes
+      down when you redeem — your spendable balance above is separate and does.
+    </p>
   </div>`;
 }
 
-function storeCard(item, account) {
+function storeCard(item, account, alreadyRedeemed) {
   const affordable = (account.pointsBalance ?? 0) >= item.cost;
   const short = item.cost - (account.pointsBalance ?? 0);
 
@@ -213,16 +222,18 @@ function storeCard(item, account) {
         >${formatPoints(item.cost)}</span
       >
     </div>
-    ${affordable
-      ? html`<button class="btn btn--primary btn--block" data-redeem="${esc(item.id)}">
-          Redeem for ${formatPoints(item.cost)} points
-        </button>`
-      : html`<button class="btn btn--secondary btn--block" disabled>
-            ${formatPoints(short)} more points needed
-          </button>
-          <p class="card__meta" style="text-align:center">
-            Keep completing daily challenges and you'll get there.
-          </p>`}
+    ${alreadyRedeemed
+      ? html`<span class="pill pill--success">${icons.checkCircle()}Redeemed</span>`
+      : affordable
+        ? html`<button class="btn btn--primary btn--block" data-redeem="${esc(item.id)}">
+            Redeem for ${formatPoints(item.cost)} points
+          </button>`
+        : html`<button class="btn btn--secondary btn--block" disabled>
+              ${formatPoints(short)} more points needed
+            </button>
+            <p class="card__meta" style="text-align:center">
+              Keep completing daily challenges and you'll get there.
+            </p>`}
   </div>`;
 }
 

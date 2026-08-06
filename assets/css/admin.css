@@ -51,6 +51,10 @@
   display: flex;
   gap: 0;
   overflow-x: auto;
+  /* Same scroll cue as .chips (screens.css) — an unsignalled overflow-x clip
+     reads as a broken layout rather than a scrollable strip. */
+  mask-image: linear-gradient(to right, black calc(100% - 32px), transparent);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 32px), transparent);
   background: var(--color-primary-pressed);
   position: sticky;
   top: 56px;

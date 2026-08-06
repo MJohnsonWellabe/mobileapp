@@ -131,16 +131,20 @@
   flex: none;
   display: grid;
   place-items: center;
-  width: 28px;
-  height: 28px;
+  /* The button's full-width row is the real 48px tap target
+     (--tap-target-min on .challenge), but a checkbox that looks this small
+     reads as too small regardless of the actual hit area (visual QA
+     finding), so the glyph itself is sized up too. */
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
   border: 2px solid var(--color-text-secondary);
   background: var(--color-surface);
   color: transparent;
 }
 .challenge__box svg {
-  width: 20px;
-  height: 20px;
+  width: 22px;
+  height: 22px;
 }
 .challenge[aria-pressed='true'] .challenge__box {
   background: var(--color-success);
@@ -482,6 +486,11 @@
   overflow-x: auto;
   padding-bottom: var(--space-1);
   -webkit-overflow-scrolling: touch;
+  /* A hard overflow-x clip with no cue reads as a broken layout rather than a
+     scrollable strip (visual QA finding). The fade softens the cut edge and
+     signals there's more without any JS scroll-position tracking. */
+  mask-image: linear-gradient(to right, black calc(100% - 32px), transparent);
+  -webkit-mask-image: linear-gradient(to right, black calc(100% - 32px), transparent);
 }
 .chip {
   flex: none;

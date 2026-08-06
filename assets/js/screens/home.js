@@ -183,7 +183,7 @@ function attentionCard(items) {
     ${items.map(
       (item) => html`<div class="card stack-sm">
         <div class="notice-banner notice-banner--${item.tone === 'accent' ? 'info' : item.tone}">
-          ${icons.alert()}
+          ${item.tone === 'accent' ? icons.starFilled() : icons.alert()}
           <span><strong>${esc(item.title)}</strong><br />${esc(item.body)}</span>
         </div>
         <a class="btn btn--primary btn--block" href="${esc(targetHref(item.actionTarget))}"
