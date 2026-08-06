@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Seed loader — Wellabe (dev tool)</title>
+    <meta name="robots" content="noindex" />
+    <link rel="stylesheet" href="assets/css/tokens.css" />
+    <link rel="stylesheet" href="assets/css/components.css" />
+    <style>
+      body {
+        padding: var(--space-6) var(--space-4);
+      }
+      main {
+        max-width: 640px;
+        margin: 0 auto;
+      }
+      pre {
+        background: var(--color-surface-sunken);
+        padding: var(--space-3);
+        border-radius: var(--radius-md);
+        overflow: auto;
+        font-size: var(--text-sm);
+      }
+      code {
+        background: var(--color-surface-sunken);
+        padding: 1px 5px;
+        border-radius: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="stack-lg">
+      <div>
+        <h1>Seed loader</h1>
+        <p class="disclosure">
+          A development tool. It is not linked from the app and nothing in the app links
+          here.
+        </p>
+      </div>
+
+      <div class="notice-banner notice-banner--warning">
+        <span>
+          <strong>Before you run this:</strong> in the Firebase console, open Firestore →
+          <code>_config</code> → <code>seed</code> and set <code>enabled</code> to
+          <strong>true</strong> with <code>expiresAt</code> about an hour from now. The
+          security rules block most of these writes otherwise, on purpose. Set it back to
+          <strong>false</strong> when the run finishes.
+        </span>
+      </div>
+
+      <div class="card stack">
+        <p>
+          Loads all 8 demo members plus admin, and everything attached to them — policies,
+          payments, claims, rewards, health history, care providers, and mailbox content.
+        </p>
+        <p class="disclosure">
+          Safe to re-run. Document IDs are fixed, so a second run overwrites rather than
+          duplicating. Every date is computed relative to <em>today</em>, so re-running it
+          the morning of a demo refreshes the whole timeline.
+        </p>
+        <button class="btn btn--primary btn--block" id="run">Load seed data</button>
+        <label class="disclosure">
+          <input type="checkbox" id="emulator" /> Write to the local emulator instead of the
+          live project
+        </label>
+      </div>
+
+      <div id="status" class="stack"></div>
+    </main>
+
+    <script type="module">
+      const emulatorBox = document.getElementById('emulator');
+      emulatorBox.checked = localStorage.getItem('wellabe.emulator') === '1';
+      emulatorBox.addEventListener('change', () => {
+        localStorage.setItem('wellabe.emulator', emulatorBox.checked ? '1' : '0');
+        location.reload();
+      });
+
+      document.getElementById('run').addEventListener('click', async (event) => {
+        const button = event.currentTarget;
+        const status = document.getElementById('status');
+        button.disabled = true;
+        button.textContent = 'Loading…';
+        status.innerHTML = '<p>Starting…</p>';
+
+        try {
+          const { runSeed } = await import('./assets/js/seed.js');
+          await runSeed({
+            onProgress(done, total, failed) {
+              status.innerHTML = `<p>Wrote ${done} of ${total}${failed ? ` — ${failed} failed` : ''}</p>`;
+            },
+            onDone({ total, failures, counts }) {
+              const summary = Object.entries(counts)
+                .sort()
+                .map(([k, v]) => `${k.padEnd(22)} ${v}`)
+                .join('\n');
+              status.innerHTML = failures.length
+                ? `<div class="notice-banner notice-banner--danger"><span><strong>${failures.length} of ${total} writes failed.</strong>
+                     A permissions error while the seed flag is on is a shape violation, not a
+                     permissions problem — check the failing field against firestore.rules.</span></div>
+                   <pre>${failures.slice(0, 15).map((f) => `${f.path}\n  ${f.message}`).join('\n\n')}</pre>`
+                : `<div class="notice-banner notice-banner--info"><span><strong>Done.</strong>
+                     ${total} documents written. Set <code>_config/seed.enabled</code> back to
+                     false.</span></div><pre>${summary}</pre>`;
+            },
+          });
+        } catch (err) {
+          status.innerHTML = `<div class="notice-banner notice-banner--danger"><span>${err.message}</span></div>`;
+        } finally {
+          button.disabled = false;
+          button.textContent = 'Load seed data';
+        }
+      });
+    </script>
+  </body>
+</html>

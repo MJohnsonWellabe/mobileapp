@@ -347,7 +347,11 @@ Three constraints the security rules impose on how it must be written:
   stricter than the tables above: `claimNumber` matches `CLM-YYYY-NNNNN`, `policyNumber` is
   uppercase alphanumerics and hyphens, `address.state` is exactly two letters, `zip` is five
   digits, and the admin user still needs `email`/`phone`/`preferredContactMethod`/`address`
-  keys present even though its values are empty — empty strings pass, missing keys don't.
+  keys present. **Correction to an earlier version of this doc:** it said the admin's values
+  could all be empty strings. That is true of `email` and `phone`, which the rules check with
+  `isTextOrEmpty`, but *not* of `address` — `addressValid()` requires a non-empty street and
+  city, a two-letter state, and a five-digit zip, so an all-empty address is rejected. The
+  admin document carries a placeholder address that reads as internal rather than personal.
   A seed failure reporting "Missing or insufficient permissions" while seed mode is on is a
   shape violation, not a permissions problem; the console's Rules Playground pinpoints the
   failing clause.

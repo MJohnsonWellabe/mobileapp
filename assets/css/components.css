@@ -330,11 +330,15 @@ a {
   flex: 1;
   min-width: 0;
 }
+/* These are spans inside a span, so they need an explicit block — without it the
+   title and the status run together on one line. */
 .section-card__title {
+  display: block;
   font-size: var(--text-base);
   font-weight: var(--weight-bold);
 }
 .section-card__status {
+  display: block;
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
   overflow: hidden;

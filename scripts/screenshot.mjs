@@ -152,8 +152,20 @@ export async function capture({ screens, members, all, print, widths, emulator }
 
         if (print) await page.emulateMedia({ media: 'print' });
 
+        // Grow the viewport to the content height and capture normally, rather
+        // than using fullPage. With fullPage, Chromium leaves position:fixed
+        // elements at their original viewport offset, so the bottom tab bar lands
+        // in the middle of the image — which reads as a layout bug to a reviewer
+        // who is only allowed to look at the picture. Resizing puts fixed chrome
+        // where a member would actually see it.
+        const height = await page.evaluate(() =>
+          Math.min(6000, Math.ceil(document.documentElement.scrollHeight)),
+        );
+        await page.setViewportSize({ width, height: Math.max(height, 700) });
+        await page.waitForTimeout(120);
+
         const name = `${screen}_${member}_${width}${print ? '_print' : ''}.png`;
-        await page.screenshot({ path: path.join(OUT_DIR, name), fullPage: true });
+        await page.screenshot({ path: path.join(OUT_DIR, name) });
         written.push(name);
         console.log(`  ${name}${problems.length ? `   !! ${problems[0]}` : ''}`);
 
