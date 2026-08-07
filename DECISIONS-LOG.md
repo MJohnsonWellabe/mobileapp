@@ -960,3 +960,91 @@ additional pass, not a replacement for the existing reviewer. `scripts/screensho
 gained a `--theme dark` flag (plants `localStorage`'s `wellabe.theme` key via the same
 `addInitScript` mechanism it already uses to plant the session) so both reviewers can be
 run against dark-mode screenshots, not just light.
+
+## Part 6 iteration: two full review rounds, blocking fixes, and what's still open
+
+Ran both reviewers (`visual-qa-reviewer` and `brand-experience-reviewer`) against all 140
+screenshots (every screen, light + dark, 375px + 640px). First round: both FAIL. Fixed
+every finding either reviewer graded blocking, re-shot, re-reviewed. Second round: both
+FAIL again, but on different, smaller defects — one new bug introduced by the first
+round's own fix, plus a scope-level pattern neither reviewer had surfaced before.
+
+**Real bugs found and fixed:**
+
+- **The wide (640px) tier was architected wrong.** `.app-main` widened to 720px for every
+  screen, but only Home actually reflows content into that extra width (its 2-column card
+  grid). Every other screen — MyPayments, MyInformation, MyCoverages, MyRewards,
+  MyMailbox, MyHealth — just got a wider container around an unchanged single-column
+  layout, and the `.data-row`/`.btn--block` width caps added earlier to keep those elements
+  from looking stretched (see the wide-tier redesign entry above) made it worse: dividers,
+  buttons, and values stopped at their old cap while the card around them kept growing,
+  producing four different right edges inside one card. Fixed by making the wide tier
+  **opt-in** (`.app-main--wide`, applied only to `home.html`) instead of a blanket rule —
+  every other screen now keeps its proven 375/430 layout at every width, which is honest
+  given none of them have a wide-tier design yet, rather than a container that grows with
+  nothing to fill it.
+- **Home's streak ring never actually moved.** It was wired to *today's* checkbox state
+  (0 or 1), not the streak count next to it, so a 0-day and a 45-day streak rendered
+  pixel-identically — the one thing a progress ring must never do. Fixed by reusing
+  MyHealth's own ring formula (`currentStreakDays / max(7, longestStreakDays)`) so the two
+  screens' rings agree and the ring actually shows progress. Today's completion is still
+  fully covered by the checkbox row directly beneath it.
+- **MyRewards' locked store items were a disabled button at ~2–3:1 contrast** (`.btn[disabled]`'s
+  45% opacity applied to already-mid-contrast secondary-button colors) shaped identically
+  to the real "Redeem" button next to it — unreadable and looked like a broken tap target.
+  Fixed by rendering it as plain text with a lock icon instead of a disabled button; no
+  button chrome to look broken.
+- **A CSS specificity collision truncated a real divider.** `.section-grid .section-card
+  { align-items: flex-start }` (added to fix title misalignment when a card's status wraps
+  to two lines) has the same specificity as `.section-card--split`'s own `align-items:
+  stretch`, and wins by source order at the same breakpoint — so the MyCoverages card's
+  second link ("View ID card") shrank to its own content width instead of spanning the
+  card, truncating the divider above it to a stub. This one survived the *first* fix round
+  because I checked a screenshot before scrolling to look closely at it and misjudged what
+  I was looking at — a reminder that "I looked at it" isn't the same as "I looked closely
+  enough." Fixed with a scoped `.section-grid .section-card--split { align-items: stretch
+  }` re-assertion, later in the cascade.
+- Unread notice pill changed from red (`.pill--danger`, colliding with Failed/Denied/
+  Lapsed in the same list) to teal (`.pill--info`) — "new" and "something is wrong" were
+  sharing a color.
+- `.section-grid { align-items: start }` — grid's default `stretch` was matching every
+  card's height to its row's tallest neighbor, which stretched MyMailbox's shorter card to
+  match MyCoverages' new two-link card and stranded its chevron mid-card. Cards now keep
+  their own height.
+- Warmed the dark-mode yellow tint (`#332c10` → `#4a3a14`) — the original read as muddy
+  olive-brown next to the vivid solid-yellow hero elsewhere on the same screen.
+
+**What's raised but deliberately not done in this pass**, because it's IA/feature work,
+not the visual/interaction polish this round was scoped to — flagged here so it isn't lost:
+
+- Both reviewers, independently, want the digital ID card promoted to a full headline
+  object on Home (card-shaped, not a text link) rather than the current "View ID card"
+  link inside the MyCoverages tile. This is very likely right long-term — it's the single
+  most-cited "what good insurance apps do" pattern in this session's own competitive
+  research — but it's a real layout/IA change, not a styling fix, and deserves its own
+  pass rather than being folded into a bug-fix cycle.
+- MyClaims' populated state (one claim on file) leaves roughly two-thirds of the screen
+  empty below the claim card — no status timeline, no "what happens next," no contact
+  card. The empty *state* (zero claims) is already well-designed; the populated one needs
+  the same care. Not attempted here — a real content/layout addition, not a fix.
+- Status words on Home's own card grid ("· Lapsed", "Payment past due") still render as
+  plain grey text rather than the icon+color pill used on MyCoverages/MyPayments
+  themselves. Reusing that pill on Home's grid is a reasonable, contained next fix — flagged
+  but not done this round given time spent on the blocking items above.
+- MyCare's category chips still clip at the scrollable row's edge with no fade/scroll cue,
+  and read as low-affordance (grey outline, no fill) — a real fix, deferred.
+- A handful of `notable`/`minor` findings (Home's left-column grid gap where MyCoverages'
+  taller card sets the row height; the admin tab strip still clipping mid-word with no
+  scroll cue; "Add more coverage"'s button style differing between members depending on
+  whether a more urgent action is present elsewhere on the same screen — confirmed
+  intentional single-primary-CTA behavior, not a bug, same as logged earlier this session)
+  are recorded in the review agents' own output rather than repeated verbatim here.
+
+**Verdict at the point this session stopped:** both reviewers still return FAIL, on the
+items above (the ID-card-as-hero and MyClaims-populated-state items are the two most
+likely to keep failing a fresh review, since they're the largest and most clearly
+IA-shaped). Every finding graded `blocking` across two full review rounds was fixed and
+re-verified by screenshot. What's left is real, sourced from genuine competitive research,
+and worth a dedicated next pass — but it's a different kind of work than this session's
+"make it look and feel better" mandate, and shouldn't be rushed into the tail end of an
+already-long session.

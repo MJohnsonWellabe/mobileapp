@@ -269,6 +269,16 @@
   .section-grid .section-card {
     align-items: flex-start;
   }
+  /* .section-card--split's own align-items: stretch (screens/components.css)
+     loses to the flex-start rule just above once both match at this
+     breakpoint — same specificity, source order wins — which let its
+     .section-card__idcard link shrink to its own content width instead of
+     spanning the card, truncating the divider above "View ID card" to a
+     stub (visual QA finding). Re-assert stretch for this variant only; it
+     has no title/body row to top-align in the first place. */
+  .section-grid .section-card--split {
+    align-items: stretch;
+  }
   .section-grid .section-card__chevron {
     align-self: center;
   }
