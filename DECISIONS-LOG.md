@@ -819,3 +819,22 @@ redesign this session; the doc just never caught up.
 Screenshot QA (`scripts/screenshot.mjs`) now includes 640 and 768 in its default
 `BREAKPOINTS` alongside the existing 375/430, so this tier gets checked going forward
 without a manual `--widths` override.
+
+First `visual-qa-reviewer` pass came back FAIL: one blocking finding (the 2-column Home
+grid centered each card's icon+body on its own height, so a card whose status wrapped to
+two lines threw its row partner's title out of alignment — plus the middot/date wrapping
+already described) and several notable ones (a `.btn--block` stretched to a ~685px slab
+at 720px width, `.data-row`'s `space-between` stranding a label and value a few hundred
+pixels apart, an admin tab sitting flush against the viewport edge at 640px, and the
+rewards tier disclosure's run-on sentence). Fixed all of them — top-aligned the grid
+card's icon+body block, capped `.btn--block` and `.data-row` width at the wide tier, gave
+`.admin-tabs` trailing padding, and split the disclosure copy — then re-shot and confirmed
+each one directly. Two findings were reviewed and intentionally left alone: MyCoverages'
+"See what else you can add" button switching between primary and secondary styling
+between members is the "one primary CTA per screen state" rule working correctly (it
+demotes to secondary when a more urgent action — restoring lapsed coverage — is already
+the page's primary), not an inconsistency; and the rewards store's low-contrast disabled
+"N more points needed" button is a real, pre-existing issue unrelated to this change
+(it's the disabled-state opacity used everywhere in the app) — already called out as a
+deferred item in the earlier closing summary, left for a dedicated pass rather than
+patched in isolation here.
