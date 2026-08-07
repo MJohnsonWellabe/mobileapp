@@ -193,7 +193,7 @@ function balanceCard(account) {
   const toGo = next ? TIER_THRESHOLDS[next] - lifetime : 0;
   const pct = next ? Math.min(1, lifetime / TIER_THRESHOLDS[next]) : 1;
 
-  return html`<div class="card card--accent stack-sm">
+  return html`<div class="card card--accent-solid stack-sm">
     <div class="balance">
       <span class="balance__number">${formatPoints(account.pointsBalance ?? 0)}</span>
       <span class="balance__unit">points to spend</span>

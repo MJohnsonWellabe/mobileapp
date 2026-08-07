@@ -51,7 +51,7 @@
 
 .login__art {
   color: var(--color-text-primary);
-  opacity: 0.4;
+  opacity: var(--art-opacity-login);
   margin: var(--space-8) auto var(--space-6);
   max-width: 260px;
   width: 100%;
@@ -71,13 +71,23 @@
 
 /* ============================================================ home ======== */
 
+/* A filled yellow panel, the same "filled panel" role docs/01 already
+   sanctions for the ID card's top band — leaning further into the brand
+   colour without touching the accessibility rule (yellow still never carries
+   text on its own; everything inside this panel resolves through
+   --color-on-brand-yellow, the one ink pinned for exactly this purpose). */
+.home-hero {
+  background: var(--color-brand-yellow);
+  border-radius: var(--radius-lg);
+  padding: var(--space-5);
+}
 .home-greeting {
   margin-bottom: var(--space-1);
   font-size: var(--text-2xl);
+  color: var(--color-on-brand-yellow);
 }
 .home-sub {
-  color: var(--color-text-secondary);
-  margin-bottom: var(--space-5);
+  color: var(--color-on-brand-yellow);
 }
 
 /* The Today card is pinned above everything else: completing the daily habit
@@ -149,7 +159,7 @@
 .challenge[aria-pressed='true'] .challenge__box {
   background: var(--color-success);
   border-color: var(--color-success);
-  color: var(--color-text-on-dark);
+  color: var(--color-on-success);
 }
 .challenge[aria-pressed='true'] .challenge__label {
   text-decoration: line-through;
@@ -177,7 +187,7 @@
 }
 .ring__track {
   fill: none;
-  stroke: rgba(20, 24, 27, 0.12);
+  stroke: var(--color-track);
   stroke-width: 7;
 }
 .ring__value {
@@ -199,7 +209,7 @@
 }
 .ring__unit {
   display: block;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--color-text-secondary);
 }
 @media (prefers-reduced-motion: reduce) {
@@ -238,19 +248,9 @@
   .ring__number {
     font-size: var(--text-2xl);
   }
-  .ring__unit {
-    font-size: var(--text-sm);
-  }
   .section-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: var(--space-4);
-  }
-  /* Each card is roughly half as wide once the grid goes two columns, which
-     truncates status lines that fit fine in one long column ("Medicare
-     Supplement …", "Contact details and ad…") — hidden text is a worse
-     outcome than a two-line card, especially for this member base. */
-  .section-grid .section-card__status {
-    white-space: normal;
   }
   /* .section-card centers icon/body/chevron on its own height, which is
      invisible in a single column (every card is the same height as its
@@ -283,7 +283,18 @@
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-lg);
-  overflow: hidden;
+}
+/* Corner-radius on the end rows themselves, not overflow:hidden on the list —
+   overflow:hidden clips the (deliberately outset) focus ring on every row, which
+   was harmless while every row only navigated and became disqualifying once one
+   row is a keyboard-operated switch. */
+.more-row:first-child {
+  border-top-left-radius: var(--radius-lg);
+  border-top-right-radius: var(--radius-lg);
+}
+.more-row:last-child {
+  border-bottom-left-radius: var(--radius-lg);
+  border-bottom-right-radius: var(--radius-lg);
 }
 .more-row {
   display: flex;
@@ -300,6 +311,10 @@
   text-align: left;
   text-decoration: none;
   cursor: pointer;
+  transition: background-color 0.12s ease;
+}
+.more-row:active {
+  background: var(--color-surface-sunken);
 }
 .more-row:last-child {
   border-bottom: 0;
@@ -349,7 +364,7 @@
   gap: var(--space-2);
   padding: var(--space-3) var(--space-4);
   background: var(--color-brand-yellow);
-  color: var(--color-text-primary);
+  color: var(--color-on-brand-yellow);
 }
 .idcard__mark {
   display: block;
@@ -368,7 +383,7 @@
 }
 .idcard__type {
   margin-left: auto;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   font-weight: var(--weight-bold);
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -386,7 +401,7 @@
 }
 .idcard__label {
   display: block;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--color-text-secondary);
@@ -476,7 +491,7 @@
 .tracker__step--done .tracker__marker {
   background: var(--color-success);
   border-color: var(--color-success);
-  color: var(--color-text-on-dark);
+  color: var(--color-on-success);
 }
 .tracker__step--current .tracker__marker {
   border-color: var(--color-primary);
@@ -487,7 +502,7 @@
 .tracker__step--denied .tracker__marker {
   background: var(--color-danger);
   border-color: var(--color-danger);
-  color: var(--color-text-on-dark);
+  color: var(--color-on-danger);
 }
 .tracker__body {
   min-width: 0;
@@ -555,7 +570,7 @@
      regardless of what's underneath it — a color-matched gradient overlay
      (tried first) was invisible in practice: fading dark text to white on an
      already-white chip background produces no perceptible change at all. */
-  box-shadow: inset -20px 0 12px -12px rgba(20, 24, 27, 0.3);
+  box-shadow: var(--shadow-scroll-cue);
 }
 .chip {
   flex: none;
@@ -572,7 +587,7 @@
 .chip[aria-pressed='true'] {
   background: var(--color-primary);
   border-color: var(--color-primary);
-  color: var(--color-text-on-dark);
+  color: var(--color-on-primary);
   font-weight: var(--weight-medium);
 }
 
@@ -730,8 +745,24 @@
 
 /* Letter-proportioned and held to the same standard as the ID card, because this
    is the other artifact that gets pinch-zoomed in the demo. */
+/* A rendering of a piece of mail, not an app surface — its whole job is to read
+   as a finished, printed artifact, so it stays paper-colored in both themes.
+   Re-pinning the tokens here (rather than overriding them for .doc inside the
+   dark block) re-pins every descendant at once, since they all already resolve
+   colour through var(--color-*) — no per-element overrides, no specificity
+   fight against :root[data-theme='dark']. --shadow-card is deliberately NOT
+   pinned: keeping the dark theme's heavier shadow under a light sheet makes it
+   read as floating over a dark app, which is the effect we want. */
 .doc {
+  --color-surface: #ffffff;
+  --color-background: #ffffff;
+  --color-text-primary: #14181b;
+  --color-text-secondary: #55606b;
+  --color-border: #e2ddd7;
+  --color-border-strong: #c7bfb6;
+
   background: var(--color-surface);
+  color: var(--color-text-primary);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-sm);
   padding: var(--space-6) var(--space-5);
@@ -843,6 +874,23 @@
 
 /* ======================================================== rewards ========= */
 
+/* Points/rewards emphasis is one of the roles docs/01 explicitly sanctions for
+   a solid yellow fill (the same role the ID card's top band already uses) —
+   this is the one card in the app where leaning fully into the brand colour,
+   rather than just a tint, is the documented use case. Secondary text inside
+   is re-pinned to --color-on-brand-yellow too, since --color-text-secondary
+   (a muted grey) doesn't clear the contrast floor against solid yellow. */
+.card--accent-solid {
+  background: var(--color-brand-yellow);
+  border-color: var(--color-brand-yellow);
+  color: var(--color-on-brand-yellow);
+}
+.card--accent-solid .balance__unit,
+.card--accent-solid .card__meta,
+.card--accent-solid .disclosure {
+  color: var(--color-on-brand-yellow);
+}
+
 .balance {
   text-align: center;
 }
@@ -867,7 +915,7 @@
 .meter {
   height: 10px;
   border-radius: var(--radius-pill);
-  background: rgba(20, 24, 27, 0.12);
+  background: var(--color-track);
   overflow: hidden;
 }
 .meter__fill {
@@ -969,6 +1017,6 @@
 }
 .provider-stat__label {
   display: block;
-  font-size: var(--text-xs);
+  font-size: var(--text-sm);
   color: var(--color-text-secondary);
 }

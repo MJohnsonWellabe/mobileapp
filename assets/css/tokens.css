@@ -8,28 +8,42 @@
   /* ---- Brand -------------------------------------------------------------
      Yellow is a BACKGROUND colour and nothing else. It measures 1.48:1 against
      --color-background, so it can never carry text, a border, or a status
-     indicator. It is legible only underneath --color-text-primary (10.6:1),
-     which is exactly how Wellabe's own portal uses it. */
+     indicator. It is legible only underneath --color-on-brand-yellow (10.6:1),
+     which is exactly how Wellabe's own portal uses it. Yellow itself is a brand
+     constant and never flips in dark mode — --color-on-brand-yellow doesn't
+     either, since text on solid yellow needs a fixed ink regardless of theme. */
   --color-brand-yellow: #edc319;
   --color-brand-yellow-tint: #fdf6dc;
-  --color-brand-teal: #15a5bb; /* 2.58:1 — decorative fills only, never a control */
+  --color-brand-teal: #15a5bb; /* 2.58:1 in light — decorative fills only, never a control */
+  --color-on-brand-yellow: #14181b;
 
   /* ---- Actions -----------------------------------------------------------
      Deepened from the brand teal until it passes AA both as text on the app
-     background (5.67:1) and as a surface under white text (6.48:1). */
+     background (5.67:1) and as a surface under white text (6.48:1). --color-
+     on-primary/-success/-warning/-danger exist because, once these flip for
+     dark-surface contrast, the same colour can no longer also be legible text
+     under white — the foreground for a solid fill has to be its own token. */
   --color-primary: #076874;
   --color-primary-pressed: #04525c;
   --color-primary-tint: #e4eff1;
+  --color-on-primary: #ffffff;
 
   /* ---- Status ------------------------------------------------------------
      Warning is a burnt orange, deliberately. An amber warning would sit a few
      degrees of hue from the brand yellow and read as decoration, not an alert. */
   --color-success: #0f7a4a;
   --color-success-tint: #e3f3ea;
+  --color-on-success: #ffffff;
   --color-warning: #a34a06;
   --color-warning-tint: #fbeade;
+  --color-on-warning: #ffffff;
   --color-danger: #a81e16;
   --color-danger-tint: #fbe6e4;
+  --color-on-danger: #ffffff;
+  /* The toast is always on --color-ink, in both themes, so its icon colours
+     are tokenized but never re-declared in the dark block. */
+  --color-success-on-dark: #7bd6a5;
+  --color-danger-on-dark: #f4a19b;
 
   /* ---- Rewards tiers -------------------------------------------------------
      Bronze and Silver need their own tokens because brand yellow can only
@@ -49,16 +63,28 @@
   --color-background: #f3efec;
   --color-text-primary: #14181b;
   --color-text-secondary: #55606b;
+  /* Chrome that is dark in BOTH themes (the toast, the ID card footer) — not
+     "whatever the opposite of the current theme is." --color-ink is the panel
+     colour for that chrome and does flip (it has to stay lighter than
+     whatever surface it sits on, in both themes), but text-on-dark itself is
+     already white in both and never needs to change. */
   --color-text-on-dark: #ffffff;
   --color-border: #e2ddd7;
   --color-border-strong: #c7bfb6;
-  --color-ink: #14181b; /* admin chrome and dark panels */
+  --color-ink: #14181b; /* toast background, ID card footer, admin borrows this too */
+
+  /* Admin's topbar/tab-strip chrome, split from --color-primary so admin
+     doesn't inherit primary's dark-mode brightening (which exists purely for
+     contrast on a dark surface admin's chrome doesn't have). */
+  --color-chrome: #076874;
+  --color-chrome-2: #04525c;
+  --color-on-chrome: #ffffff;
 
   /* ---- Type -------------------------------------------------------------- */
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
     sans-serif;
   --text-xs: 13px;
-  --text-sm: 15px;
+  --text-sm: 16px; /* was 15px — the workhorse size for status pills and dashboard status lines */
   --text-base: 17px; /* floor for body copy — deliberate, not an oversight */
   --text-lg: 20px;
   --text-xl: 24px;
@@ -87,7 +113,19 @@
   --radius-lg: 16px;
   --radius-pill: 999px;
   --shadow-card: 0 1px 2px rgba(20, 24, 27, 0.06), 0 1px 8px rgba(20, 24, 27, 0.04);
-  --shadow-raised: 0 4px 16px rgba(20, 24, 27, 0.12);
+  --shadow-raised: 0 8px 24px rgba(20, 24, 27, 0.16);
+  /* The unfilled track of a progress indicator (the streak ring, the rewards
+     meter) — translucent so it composites over whatever surface it lands on,
+     rather than a colour that has to be told what's behind it. */
+  --color-track: rgba(20, 24, 27, 0.12);
+  /* One shade brighter than --color-surface-sunken, for the loading shimmer. */
+  --color-skeleton-sheen: #f2ede8;
+  /* The chip-strip/admin-tab horizontal scroll cue (screens.css/admin.css). */
+  --shadow-scroll-cue: inset -20px 0 12px -12px rgba(20, 24, 27, 0.3);
+  /* Decorative line-art opacity — a single flat value looks hotter in dark
+     mode than in light, so it's a token, not a literal on each illustration. */
+  --art-opacity: 0.55;
+  --art-opacity-login: 0.4;
 
   /* ---- Navigation & targets ---------------------------------------------- */
   --nav-height: 64px;
@@ -104,5 +142,81 @@
      must match. */
   --content-max-wide: 720px;
 
-  --focus-ring: 0 0 0 3px #ffffff, 0 0 0 5px var(--color-primary);
+  --color-focus-halo: #ffffff;
+  --focus-ring: 0 0 0 3px var(--color-focus-halo), 0 0 0 5px var(--color-primary);
+
+  /* Tells the browser which native widget style (checkboxes, scrollbars,
+     the default select arrow) to draw — without this, .switch-row's native
+     checkboxes and .choice's radios render as light-mode widgets stranded on
+     a dark card. */
+  color-scheme: light;
+}
+
+/* ==========================================================================
+   Dark mode — a manual, in-app toggle (assets/js/theme.js), not just
+   prefers-color-scheme. Wrapped in @media screen so print always resolves
+   :root's light values regardless of the active theme: a member with dark
+   mode on who prints a document from MyMailbox must not get a black page.
+
+   Every token below is redefined wholesale for dark, not derived from a
+   shared "base" variable — several roles genuinely invert (--color-ink gets
+   LIGHTER than surface here, since it is an elevated panel, not the darkest
+   thing on screen; --color-surface-sunken gets DARKER than both the page and
+   the surface, the opposite of light mode) and forcing them through one
+   shared formula would get those inversions backwards. See DECISIONS-LOG.md
+   for the reasoning that a single --color-primary cannot serve both "legible
+   text on a light surface" and "legible surface under white text" once
+   inverted — that is why --color-on-* exists as its own set of tokens rather
+   than as a rule ("always white on primary") that only holds in light mode. */
+@media screen {
+  :root[data-theme='dark'] {
+    --color-brand-yellow-tint: #332c10;
+
+    --color-primary: #4cc6d8;
+    --color-primary-pressed: #34a8ba;
+    --color-primary-tint: #0f2a2d;
+    --color-on-primary: #06181d;
+
+    --color-success: #43c98a;
+    --color-success-tint: #0f2318;
+    --color-on-success: #04150d;
+    --color-warning: #f0923f;
+    --color-warning-tint: #2e1c0c;
+    --color-on-warning: #1f1205;
+    --color-danger: #e8574c;
+    --color-danger-tint: #2e120f;
+    --color-on-danger: #250906;
+
+    --color-tier-bronze: #c98f52;
+    --color-tier-bronze-tint: #2e2013;
+    --color-tier-silver: #9aa5ad;
+    --color-tier-silver-tint: #20262b;
+
+    --color-surface: #1a2024;
+    --color-surface-sunken: #0b0f12;
+    --color-background: #101417;
+    --color-text-primary: #f2f4f5;
+    --color-text-secondary: #a9b2b9;
+    --color-border: #2a3237;
+    --color-border-strong: #3d474d;
+    --color-ink: #2b3238;
+
+    --color-chrome: #0e2429;
+    --color-chrome-2: #0a1b1f;
+
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.5), 0 1px 8px rgba(0, 0, 0, 0.35);
+    --shadow-raised: 0 6px 20px rgba(0, 0, 0, 0.6);
+    --color-track: rgba(255, 255, 255, 0.16);
+    --color-skeleton-sheen: #1c2328;
+    /* A bright edge is the dark-UI convention for a scroll cue — the same
+       inset-shadow-over-gradient logic that picked this technique in the
+       first place (screens.css) points at inverting it, not deepening it. */
+    --shadow-scroll-cue: inset -20px 0 12px -12px rgba(255, 255, 255, 0.16);
+    --art-opacity: 0.42;
+    --art-opacity-login: 0.3;
+
+    --color-focus-halo: #101417;
+
+    color-scheme: dark;
+  }
 }

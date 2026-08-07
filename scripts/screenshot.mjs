@@ -71,7 +71,7 @@ const MEMBER_IDS = {
 };
 
 function parseArgs(argv) {
-  const out = { screens: [], members: [], all: false, print: false, widths: null, emulator: true };
+  const out = { screens: [], members: [], all: false, print: false, widths: null, emulator: true, theme: 'light' };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--all') out.all = true;
@@ -82,11 +82,12 @@ function parseArgs(argv) {
     else if (a === '--widths') out.widths = argv[++i].split(',').map(Number);
     else if (a === '--query') out.query = argv[++i];
     else if (a === '--name') out.name = argv[++i];
+    else if (a === '--theme') out.theme = argv[++i];
   }
   return out;
 }
 
-export async function capture({ screens, members, all, print, widths, emulator, query, name }) {
+export async function capture({ screens, members, all, print, widths, emulator, query, name, theme = 'light' }) {
   const targets = [];
   if (all) {
     for (const [screen, list] of Object.entries(BATCH)) {
@@ -128,9 +129,10 @@ export async function capture({ screens, members, all, print, widths, emulator, 
         // Runs before any page script on every navigation, so the app boots
         // already signed in and already pointed at the emulator.
         await context.addInitScript(
-          ({ session, useEmulator }) => {
+          ({ session, useEmulator, theme }) => {
             if (session) sessionStorage.setItem('wellabe.session', JSON.stringify(session));
             localStorage.setItem('wellabe.emulator', useEmulator ? '1' : '0');
+            localStorage.setItem('wellabe.theme', theme);
           },
           {
             session:
@@ -142,6 +144,7 @@ export async function capture({ screens, members, all, print, widths, emulator, 
                     firstName: member[0].toUpperCase() + member.slice(1),
                   },
             useEmulator: emulator,
+            theme,
           },
         );
 
@@ -169,7 +172,7 @@ export async function capture({ screens, members, all, print, widths, emulator, 
         await page.setViewportSize({ width, height: Math.max(height, 700) });
         await page.waitForTimeout(120);
 
-        const file = `${name ?? screen}_${member}_${width}${print ? '_print' : ''}.png`;
+        const file = `${name ?? screen}_${member}_${width}${theme === 'dark' ? '_dark' : ''}${print ? '_print' : ''}.png`;
         await page.screenshot({ path: path.join(OUT_DIR, file) });
         written.push(file);
         console.log(`  ${file}${problems.length ? `   !! ${problems[0]}` : ''}`);

@@ -12,9 +12,10 @@ import {
   subscribeUser,
 } from '../data.js';
 import { deriveHealthStats, formatPoints, plural } from '../format.js';
-import { html, esc } from '../ui.js';
+import { html, esc, switchTrack } from '../ui.js';
 import { icons } from '../icons.js';
 import { logout } from '../auth.js';
+import { resolvedTheme, toggleTheme } from '../theme.js';
 
 page({
   title: 'More',
@@ -28,8 +29,13 @@ page({
     subscribeHealthLogs(session.userId, (logs) => update({ logs }));
   },
 
-  events(app) {
+  events(app, ctx) {
     app.addEventListener('click', (event) => {
+      if (event.target.closest('[data-action="toggle-theme"]')) {
+        toggleTheme();
+        ctx.repaint();
+        return;
+      }
       if (event.target.closest('[data-action="logout"]')) {
         logout();
         location.replace('../index.html');
@@ -39,6 +45,7 @@ page({
 
   render(state) {
     const stats = deriveHealthStats(state.logs);
+    const isDark = resolvedTheme() === 'dark';
     const rows = [
       {
         href: 'my-health.html',
@@ -86,6 +93,24 @@ page({
             <span class="more-row__chevron">${icons.chevronRight()}</span>
           </a>`,
         )}
+      </div>
+
+      <div class="more-list">
+        <button
+          class="more-row"
+          type="button"
+          role="switch"
+          aria-checked="${isDark ? 'true' : 'false'}"
+          data-action="toggle-theme"
+          data-focus-key="theme-toggle"
+        >
+          <span class="more-row__icon">${icons.moon()}</span>
+          <span class="more-row__body">
+            <span class="more-row__label">Dark mode</span>
+            <span class="more-row__status">${isDark ? 'On' : 'Off'}</span>
+          </span>
+          ${switchTrack()}
+        </button>
       </div>
 
       <div class="more-list">

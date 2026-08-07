@@ -1,6 +1,10 @@
 /* Admin console. Same tokens, same components — a denser, table-oriented surface
-   using --color-primary as the dominant chrome so it reads as related to the member
-   app but clearly distinct (docs/06). No bottom tab bar ever appears here. */
+   using --color-chrome as the dominant chrome so it reads as related to the member
+   app but clearly distinct (docs/06). No bottom tab bar ever appears here.
+
+   --color-chrome is its own token, split from --color-primary, because primary
+   brightens substantially in dark mode for contrast on a dark surface — a change
+   this permanently-dark chrome doesn't need and shouldn't inherit. */
 
 .admin-body {
   background: var(--color-surface);
@@ -14,8 +18,8 @@
   align-items: center;
   gap: var(--space-3);
   padding: var(--space-3) var(--space-4);
-  background: var(--color-primary);
-  color: var(--color-text-on-dark);
+  background: var(--color-chrome);
+  color: var(--color-on-chrome);
 }
 .admin-topbar__mark {
   display: block;
@@ -58,7 +62,7 @@
      label and the viewport edge at widths where the strip doesn't otherwise
      overflow (e.g. 640px) — it reads as clipped rather than intentional. */
   padding-right: var(--space-4);
-  background: var(--color-primary-pressed);
+  background: var(--color-chrome-2);
   /* Same scroll cue as .chips (screens.css) — a color-matched gradient
      overlay was invisible in practice, since it fades to the same color as
      what's underneath. An inset shadow reads regardless of background. */
@@ -79,7 +83,7 @@
   white-space: nowrap;
 }
 .admin-tab[aria-current='page'] {
-  color: var(--color-text-on-dark);
+  color: var(--color-on-chrome);
   font-weight: var(--weight-bold);
   /* Brand yellow is a background colour only (docs/01) — a border is a status
      indicator, which is exactly the role yellow isn't allowed to play,
@@ -87,7 +91,7 @@
      Reusing the same white the active tab's text already carries keeps one
      consistent "this tab is active" signal instead of introducing a second,
      reserved colour for it. */
-  border-bottom-color: var(--color-text-on-dark);
+  border-bottom-color: var(--color-on-chrome);
 }
 
 .admin-main {

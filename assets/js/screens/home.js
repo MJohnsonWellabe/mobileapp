@@ -105,7 +105,7 @@ function render(state) {
   const unread = state.notices.filter((n) => !n.read).length;
 
   return html`
-    <div>
+    <div class="home-hero">
       <h1 class="home-greeting">Hello, ${esc(user.firstName)}</h1>
       <p class="home-sub">${esc(coverageLine(policies, today))}</p>
     </div>
@@ -122,12 +122,7 @@ function render(state) {
           status: unread ? plural(unread, 'new message') : "You're all caught up",
           badge: unread ? String(unread) : null,
         })}
-        ${sectionCard({
-          href: 'pages/my-coverages.html',
-          icon: 'shield',
-          title: 'MyCoverages',
-          status: coverageStatusLine(policies, today),
-        })}
+        ${coverageCard(policies, today)}
         ${sectionCard({
           href: 'pages/my-claims.html',
           icon: 'claim',
@@ -239,6 +234,36 @@ function todayCard(stats, todayLog, today) {
         </button>
       </li>
     </ul>
+  </div>`;
+}
+
+/** MyCoverages' Home card, with a second tap target straight to the digital
+ *  ID card — the one competitor feature every review agrees is worth
+ *  surfacing directly rather than behind a list → Details detour. Defaults to
+ *  the first active policy (or just the first, if none are active) when a
+ *  member holds more than one; a shortcut has to point somewhere concrete. */
+function coverageCard(policies, today) {
+  if (!policies.length) {
+    return sectionCard({
+      href: 'pages/my-coverages.html',
+      icon: 'shield',
+      title: 'MyCoverages',
+      status: coverageStatusLine(policies, today),
+    });
+  }
+  const primary = policies.find((p) => coverageStatus(p, today).key === 'active') ?? policies[0];
+  return html`<div class="section-card section-card--split">
+    <a class="section-card__main" href="pages/my-coverages.html">
+      <span class="section-card__icon">${icons.shield()}</span>
+      <span class="section-card__body">
+        <span class="section-card__title">MyCoverages</span>
+        <span class="section-card__status">${esc(coverageStatusLine(policies, today))}</span>
+      </span>
+      <span class="section-card__chevron">${icons.chevronRight()}</span>
+    </a>
+    <a class="section-card__idcard" href="pages/my-coverages.html?view=card&id=${esc(primary.id)}">
+      ${icons.card()} View ID card
+    </a>
   </div>`;
 }
 

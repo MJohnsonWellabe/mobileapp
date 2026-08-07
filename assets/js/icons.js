@@ -80,6 +80,7 @@ export const icons = {
     svg('<path d="M12 3.5s.8 3-1.4 5.2C8.3 11 7 12.6 7 14.8a5 5 0 0 0 10 0c0-3-2-4.6-2.8-6.6-1.3 1-1.4 2.4-1.4 2.4S12 8.2 12 3.5Z"/>'),
   bank: () =>
     svg('<path d="M3.5 9.5 12 4.5l8.5 5"/><path d="M5.5 9.5v8M10 9.5v8M14 9.5v8M18.5 9.5v8"/><path d="M3.5 20.5h17"/>'),
+  moon: () => svg('<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z"/>'),
 };
 
 /** The real Wellabe mark, traced from /brand-assets/ by

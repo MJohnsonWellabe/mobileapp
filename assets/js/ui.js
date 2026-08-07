@@ -116,6 +116,16 @@ export function button(label, { action, variant = 'primary', block, icon, type =
   </button>`;
 }
 
+/** The track-and-thumb visual for a role="switch" control. The switch semantics
+ *  (role="switch", aria-checked, the click handler) belong on the caller's
+ *  element — usually a whole row, per docs/01's tap-target rules — so the whole
+ *  band is the hit area rather than a 52px puck. Purely decorative here, hence
+ *  aria-hidden; [aria-checked='true'] on the ANCESTOR is what drives the
+ *  on/off look (see .switch/.switch__thumb in components.css). */
+export function switchTrack() {
+  return html`<span class="switch" aria-hidden="true"><span class="switch__thumb"></span></span>`;
+}
+
 /**
  * Empty state: illustration, heading, one sentence, optionally one action.
  * Every list screen gets one. A blank region or a bare "0" is a defect, and the

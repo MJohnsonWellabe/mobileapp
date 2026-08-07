@@ -48,7 +48,7 @@ that passes there passes on white too.
 
 | Token | Value | Contrast on bg | Usage |
 |---|---|---|---|
-| `--color-brand-yellow` | `#EDC319` | **1.48 — never text** | The mark, accent bars, streak and progress rings, points/rewards emphasis, filled panels. Only ever a background, and only ever under `--color-text-primary` (10.6:1). |
+| `--color-brand-yellow` | `#EDC319` | **1.48 — never text** | The mark, accent bars, streak and progress rings, points/rewards emphasis, filled panels — including, deliberately more than earlier drafts of this app used, the Home greeting (a full-bleed hero panel) and the MyRewards points-balance card. Only ever a background, and only ever under `--color-on-brand-yellow` (10.6:1) — see "Dark mode" below for why that's now a separate token from `--color-text-primary`. |
 | `--color-brand-yellow-tint` | `#FDF6DC` | — | Soft yellow surface for reward and milestone cards, and the Gold rewards tier chip (paired with `--color-text-primary`, never `--color-brand-yellow` itself, as chip text). |
 | `--color-brand-teal` | `#15A5BB` | 2.58 — **decorative only** | Wellabe's bright teal. Fails the 3:1 floor for UI components, so it is a large-fill and illustration-tint color, never a control, a border, or text. |
 | `--color-primary` | `#076874` | **5.67** | Deep teal derived from the brand teal. Every primary button, link, active state, and focus ring. White on it measures 6.48:1. |
@@ -83,10 +83,53 @@ against the table above, not assumed.
   demo, and Wellabe's brand font is not among the assets provided.
 - **Base body size:** 17px minimum on mobile. This is a deliberate accessibility choice for
   this member base, not an oversight.
-- **Scale:** 13 / 15 / 17 / 20 / 24 / 30 / 38px. Never an arbitrary one-off size.
+- **Scale:** 13 / 16 / 17 / 20 / 24 / 30 / 38px. Never an arbitrary one-off size. The 16px
+  step (`--text-sm`) was 15px until a later pass bumped it — it's the workhorse size for
+  status pills, every Home dashboard status line, and admin table bodies, i.e. exactly the
+  "readable in under two seconds" content principle 2 below cares about, so it doesn't get
+  to sit below the rest of the scale's spirit even though it's technically the "secondary"
+  step.
 - **Line height:** 1.5 for body copy, 1.25 for headings.
 - **Weights:** 400 body, 600 emphasis and labels, 700 headings and active nav.
 - **Never rely on weight or color alone to convey status** — pair with an icon and a label.
+
+## Dark mode
+
+A manual, in-app toggle (More screen → Dark mode), not just following the device's system
+setting — the toggle is the source of truth once set, stored in `localStorage` (not
+`sessionStorage`; a theme preference carries no identity, unlike the member session).
+
+Mechanically, it's the same token architecture as everything else in this file: every
+color in the table above is a CSS custom property, and dark mode is one additional block
+in `tokens.css` (`:root[data-theme='dark']`) that redefines the same token *names* with
+dark-appropriate values. No component's CSS references a light or dark value directly —
+that's what makes the toggle able to re-theme the entire app instantly, chrome included,
+by flipping one attribute on `<html>`.
+
+A few things are worth knowing before touching either theme's values:
+
+- **`--color-primary` cannot just get lighter for dark-surface contrast and still work as
+  it did in light mode.** In light mode it does two jobs — legible as text on a light
+  surface, and legible as a surface under white button text. Once it brightens enough to
+  read as text on a dark surface, white text on top of it stops passing contrast. That's
+  why `--color-on-primary` (and the matching `-on-success`/`-on-warning`/`-on-danger`/
+  `-on-brand-yellow`) exist: the foreground for a solid fill is its own token, not "always
+  white," because that rule only held in light mode.
+- **Elevation inverts.** In light mode, a raised surface is the same lightness as
+  everything else and relies on shadow to read as "above" the page. In dark mode, `--color-
+  ink` (used by the toast and the ID card's footer band) has to get *lighter* than
+  `--color-surface`, not darker — the darkest thing on a dark screen doesn't read as
+  elevated, it reads as a hole in it.
+- **`--color-brand-yellow` never flips.** It's a brand constant, not a UI surface — the
+  Home hero panel and the ID card band are exactly as yellow in dark mode as in light.
+  `--color-on-brand-yellow`, the ink that sits on it, doesn't flip either, for the same
+  reason: text on solid yellow needs one fixed color regardless of theme.
+- **The document viewer (a rendered piece of mail) is exempt.** It stays paper-colored —
+  white background, dark ink — in both themes, because its whole job is to look like a
+  printed artifact. The digital ID card is *not* exempt; it's an app surface that happens
+  to look like a card, and themes normally.
+
+See `DECISIONS-LOG.md` for the full reasoning trail if any of the above needs revisiting.
 
 ## Layout & responsiveness
 
@@ -149,6 +192,14 @@ ring — completing the daily habit takes zero navigation, which is what makes t
 the app multiple times a week" goal in `docs/00-product-brief.md` realistic. (One assigned
 challenge per day, not a choice of five — see `docs/03`/`docs/05` and
 `DECISIONS-LOG.md`.)
+
+**The MyCoverages card carries a second tap target: "View ID card."** Across competitor
+apps reviewed for this design system, the digital ID card is consistently the single most
+loved feature, specifically because it's reachable directly rather than behind a list →
+Details detour. Two links can't nest, so this is the one section card built from a plain
+`div` wrapper (`.section-card--split`) holding two sibling `<a>`s rather than the usual
+single-link `.section-card` — the pattern to reuse if another card ever needs a second,
+more specific shortcut alongside its general "go to this section" link.
 
 **Top app bar — three elements maximum, and never more:**
 

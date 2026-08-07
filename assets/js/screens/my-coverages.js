@@ -75,6 +75,12 @@ page({
 
   subscribe(session, update, ctx) {
     if (param('add')) ctx.view.mode = 'add';
+    // ?view=card&id=<policy> — a one-tap deep link straight to the digital ID
+    // card (Home's MyCoverages card uses this), skipping the list → Details
+    // detour. The ID card is the most universally loved feature across every
+    // competitor insurance app reviewed for this redesign precisely because
+    // it's surfaced directly rather than buried in a menu.
+    if (param('view') === 'card') ctx.view.mode = 'card';
     if (param('id')) ctx.view.openPolicy = param('id');
     subscribeUser(session.userId, (user) => update({ user }));
     subscribePolicies(session.userId, (policies) => update({ policies }));

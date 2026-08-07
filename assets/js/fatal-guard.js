@@ -12,17 +12,20 @@
     if (shown) return;
     shown = true;
     document.body.dataset.ready = '1';
+    // Colors are var(--color-...), not literals — this has to stay legible in
+    // dark mode too, and the whole point of this screen is that it survives
+    // even when nothing else on the page does.
     document.body.innerHTML =
       '<div style="max-width:420px;margin:15vh auto 0;padding:0 24px;' +
       'font:16px/1.5 -apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Helvetica,Arial,sans-serif;' +
-      'text-align:center;color:#14181B">' +
+      'text-align:center;color:var(--color-text-primary)">' +
       '<p style="font-weight:700;font-size:20px;margin:0 0 8px">This page hit a snag</p>' +
-      '<p style="color:#55606B;margin:0 0 20px;word-break:break-word">' +
+      '<p style="color:var(--color-text-secondary);margin:0 0 20px;word-break:break-word">' +
       String(message).replace(/</g, '&lt;') +
       '</p>' +
       '<button type="button" onclick="location.reload()" ' +
-      'style="padding:12px 24px;border-radius:8px;border:0;background:#076874;' +
-      'color:#fff;font:inherit;font-weight:700;cursor:pointer">Try again</button>' +
+      'style="padding:12px 24px;border-radius:8px;border:0;background:var(--color-primary);' +
+      'color:var(--color-on-primary);font:inherit;font-weight:700;cursor:pointer">Try again</button>' +
       '</div>';
   }
 

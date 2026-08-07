@@ -838,3 +838,125 @@ the page's primary), not an inconsistency; and the rewards store's low-contrast 
 (it's the disabled-state opacity used everywhere in the app) — already called out as a
 deferred item in the earlier closing summary, left for a dedicated pass rather than
 patched in isolation here.
+
+## Dark mode, bolder yellow, native-app feel, bigger text, competitive bar
+
+The human looked at a real screenshot after the wide-tier redesign and said it still
+wasn't good enough: lean into the Wellabe yellow more, ship a real dark mode, make it feel
+like an app instead of a website, use the space, make things bigger for a senior audience,
+be more engaging — benchmarked against what people actually praise about Aetna, Mutual of
+Omaha, and Cigna's apps, reviewed by a dedicated agent until it holds up. Two research
+passes and one architecture-specific pass grounded this before any code changed: a
+codebase audit of exactly how color/type/chrome are built, competitive research on named
+insurers plus Devoted/Oscar/Humana/UHC/Sydney Health, and a dedicated dark-mode
+architecture pass (this is a 12-page static app with no router or build step, so
+theme-switching has real failure modes that needed solving up front, not discovered live).
+The human chose, via explicit question: an **in-app manual toggle** (not just following the
+OS setting), and **the whole app in one pass**, same as the wide-tier work.
+
+**Dark mode.** Every color in `tokens.css` is now a custom property with a light value in
+`:root` and, where it needs to differ, a dark value in a new `@media screen { :root[data-
+theme='dark'] { ... } }` block — wrapped in `@media screen` specifically so print always
+resolves the light values regardless of the active theme; a member with dark mode on who
+prints a document from MyMailbox must not get a black page. Three things about it that
+weren't obvious going in:
+
+- **One color can't serve two roles once it inverts.** `--color-primary` in light mode is
+  both "legible as text on a light surface" and "legible as a surface under white button
+  text." Once it has to brighten for contrast on a dark surface, white text on top of it
+  stops passing — the two requirements are mathematically incompatible for a single value
+  (verified: the natural compromise clears neither at once). Fixed by splitting the
+  foreground into its own token per fill color (`--color-on-primary`, `-on-success`,
+  `-on-warning`, `-on-danger`, `-on-brand-yellow`) instead of assuming "always white on a
+  filled control," which turned out to be a light-mode-only assumption baked into every
+  component that used `--color-text-on-dark` for this. `--color-text-on-dark` itself
+  survives, narrowed to its true meaning: chrome that's dark in *both* themes (the toast,
+  the ID card's footer band) — not "the opposite of light mode."
+- **Elevation inverts.** `--color-ink` (the toast, the ID card footer) has to get *lighter*
+  than `--color-surface` in dark mode, not darker — otherwise it disappears into the page
+  instead of reading as an elevated panel. `--color-surface-sunken` goes the other way,
+  darker than both surface and page in dark mode, which is what keeps `.segmented`'s
+  well/pill relationship (the sunken track vs. the raised selected pill) correct in both
+  themes.
+- **Brand yellow is a constant, not a surface.** It does not flip, and neither does its
+  ink (`--color-on-brand-yellow`) — text on solid yellow needs one fixed color regardless
+  of theme, the same way the brand mark itself doesn't change color by theme.
+- Storage is `localStorage`, not `sessionStorage` — `auth.js`'s session-storage choice is
+  about not leaving a device logged in as a specific member overnight, which is about
+  identity. A theme preference carries none, and a demo where dark mode reverts on the
+  next page load reads as a bug, not privacy hygiene. `logout()` does not clear it.
+- Every page's `<head>` carries a byte-identical inline boot script, above the stylesheet
+  `<link>`s, that reads the stored theme (falling back to system preference) and sets
+  `data-theme` on `<html>` before first paint — the only way to avoid a flash of the wrong
+  theme on every navigation in an app with no router, where each screen is a real page
+  load. Wrapped in `try/catch`: `localStorage` *throws*, not returns null, in Safari
+  private browsing, and this runs before `fatal-guard.js` is even registered.
+- The document viewer (`.doc`, a rendered letter) is explicitly exempt — its tokens are
+  re-pinned to their light values on the `.doc` selector itself, not with dark-block
+  overrides, so the whole subtree (everything inside already resolves color through
+  `var(--color-*)`) re-pins to paper in one place. The digital ID card is *not* exempt —
+  it's an app surface, not a piece of mail, and themes normally.
+- The toggle lives on the More screen as a full-width row (`role="switch"`, the entire
+  64px band is the hit target, not a small puck) with an explicit "On"/"Off" status text
+  next to the track+thumb visual — thumb position alone would be exactly the kind of
+  color/shape-only status signal principle 2 above forbids.
+- Fixed two real bugs found only by forcing dark mode on: `fatal-guard.js`'s error screen
+  hardcoded near-black text with no background override, so it would have rendered
+  illegibly on a dark page — the one screen built to survive total failure would have
+  failed silently in dark mode specifically. And `.more-list`'s `overflow: hidden` (there
+  to clip square row corners to the list's rounded corners) was clipping every row's focus
+  ring, harmless while every row only navigated, disqualifying once one row became a
+  keyboard-operated switch — fixed by moving the corner-radius to the first/last row
+  instead of clipping the whole list.
+
+**Bolder yellow, within the existing rule.** The accessibility constraint (yellow never as
+text/border/status, 1.48:1 contrast) doesn't move — it's a floor, not a style preference.
+But yellow's *sanctioned* roles (filled panels, points/rewards emphasis) were used narrowly
+before this pass: tints and one full-bleed panel (the ID card band) in the whole app. Added
+two more full-fill panels using the exact same sanctioned role: Home's greeting is now a
+yellow hero panel, and MyRewards' balance card is now solid yellow instead of tinted
+(`.card--accent-solid`, a new modifier — deliberately not a change to the shared
+`.card--accent` tint class, which two other cards also use for a different purpose).
+
+**Native-app feel.** Deepened `--shadow-raised` for more visible elevation; added a small
+`:active` press-in (`scale(0.98)`) on buttons and section cards, and a background-tint
+press state on row-style tappables (`.more-row`, `.data-row`'s button/link variant) — the
+row treatment reads more like a native list-row press than a scale would on a thin
+full-width band. Both respect `prefers-reduced-motion`, matching every other animation in
+the codebase. Added a one-tap "View ID card" shortcut on Home's MyCoverages card — the
+single most universally praised feature across every competitor app reviewed, specifically
+because those apps surface it directly rather than behind a list → Details detour. Two
+`<a>` tags can't nest, so this required a new card shape (`.section-card--split`: a plain
+`div` carrying the card chrome, with two sibling links inside) rather than reusing the
+single-link `.section-card` — the first instance of this pattern; documented in docs/01 so
+it's the thing to reach for if another card needs a second, more specific shortcut later.
+Defaults to the member's first active policy (or first policy, if none are active) when
+choosing which policy's card to jump to.
+
+**Explicitly not done:** reducing Home's eight section cards toward the "5–6 cards" figure
+competitive research cites as the current market norm. docs/01 states "all eight section
+cards live on Home" as a considered decision, and this round of work was about visual and
+interaction polish, not information-architecture surgery — a real tradeoff worth revisiting
+deliberately later, not something to change as a side effect of a styling pass.
+
+**Bigger text.** `--text-sm` moved from 15px to 16px — it's the workhorse size for status
+pills app-wide, every Home dashboard status line, and admin table bodies, i.e. exactly the
+content principle 2 says must be readable in under two seconds. Also promoted three
+`--text-xs` (13px) sites that carry real information rather than decoration up to
+`--text-sm`: the ID card's field labels and plan-type label, the streak ring's "days" unit,
+and MyCare's per-provider stat labels. Caught one regression from the `--text-sm` bump
+during verification: `.section-card__status` was `white-space: nowrap` with ellipsis
+truncation, sized for the old, smaller text — the bigger text made it start truncating
+real information ("Paid through September 3, 2026") even in the single-column phone
+layout, not just the 2-column wide tier this rule was originally written for. Changed to
+wrap instead of truncate everywhere, not just the wide tier — a wrapped two-line status is
+always better than a hidden one, at any width.
+
+**New review subagent.** `.claude/agents/brand-experience-reviewer.md`, matching
+`visual-qa-reviewer.md`'s format exactly, graded specifically on the five marks this round
+of work targeted: brand presence, dark-mode correctness, native-app feel, senior
+legibility, and the competitive bar sourced from this session's research — a second,
+additional pass, not a replacement for the existing reviewer. `scripts/screenshot.mjs`
+gained a `--theme dark` flag (plants `localStorage`'s `wellabe.theme` key via the same
+`addInitScript` mechanism it already uses to plant the session) so both reviewers can be
+run against dark-mode screenshots, not just light.

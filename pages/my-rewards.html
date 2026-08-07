@@ -5,6 +5,22 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
     <title>MyRewards — Wellabe</title>
     <link rel="icon" href="../assets/img/wellabe-mark.svg" />
+    <!-- theme-boot — keep byte-identical in every .html. Inline and above the
+         stylesheets on purpose: every navigation in this multi-page app is a real
+         page load, so the attribute has to be on <html> before first paint or the
+         screen flashes light on the way to every dark screen. -->
+    <script>
+      (function () {
+        var t = 'light';
+        try {
+          var stored = localStorage.getItem('wellabe.theme');
+          t = stored === 'dark' || stored === 'light' ? stored
+            : (window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+        } catch (e) {}
+        document.documentElement.setAttribute('data-theme', t);
+      })();
+    </script>
+    <meta name="theme-color" content="#f3efec" />
     <link rel="stylesheet" href="../assets/css/tokens.css" />
     <link rel="stylesheet" href="../assets/css/components.css" />
     <link rel="stylesheet" href="../assets/css/screens.css" />
