@@ -178,6 +178,15 @@
   flex: 1;
   min-width: 0;
 }
+/* Literal, not --color-text-secondary: this sits on .today-card's cream tint,
+   which deliberately does not flip for dark mode. The token does flip, so in
+   dark this rendered as near-white on cream — the palest text in the app, on a
+   card that appears on every member's home screen (visual QA finding, both
+   reviewers, four MyHealth screens each). */
+.challenge__detail {
+  font-size: var(--text-sm);
+  color: #55606b;
+}
 
 /* Streak ring — brand yellow fill, which is legal because it is a shape and not
    text or a status indicator. */

@@ -4,6 +4,11 @@
 // seed data builder can import the same date maths the app uses, so the two can
 // never drift.
 
+/** The member services number, in one place. It had been copy-pasted into
+ *  my-coverages.js and features/documents.js; a third consumer (my-claims.js)
+ *  made that a real hazard rather than a tolerable duplication. */
+export const SERVICE_NUMBER = '1-800-555-0199';
+
 /* ============================================================ dates ======== */
 
 const MONTHS = [

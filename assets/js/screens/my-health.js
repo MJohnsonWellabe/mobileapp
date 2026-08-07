@@ -171,7 +171,7 @@ function challengesCard(todayLog, today) {
         <button class="challenge" type="button" data-challenge="${challenge.id}" aria-pressed="${done}">
           <span class="challenge__box" aria-hidden="true">${icons.check()}</span>
           <span class="challenge__label">
-            ${esc(challenge.label)}<br /><span style="font-size:var(--text-sm);color:var(--color-text-secondary)"
+            ${esc(challenge.label)}<br /><span class="challenge__detail"
               >${esc(challenge.detail)}</span
             >
           </span>

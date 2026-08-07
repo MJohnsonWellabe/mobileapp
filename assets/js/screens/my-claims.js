@@ -21,7 +21,7 @@ import {
 } from '../data.js';
 import { storage } from '../firebase-init.js';
 import { storageRef, uploadBytes, getDownloadURL } from '../../vendor/firebase.js';
-import { formatDate, formatDateTime, formatMoney, PRODUCT_LABELS, toDate } from '../format.js';
+import { formatDate, formatDateTime, formatMoney, PRODUCT_LABELS, toDate, SERVICE_NUMBER } from '../format.js';
 import { html, esc, dataRow, button, toast, on, illustration, emptyState } from '../ui.js';
 import { icons } from '../icons.js';
 import { noticeClaimSubmitted } from '../notices.js';
@@ -107,30 +107,66 @@ function listView(claims, policies) {
       ${icons.plus()} File a new claim
     </button>
 
-    ${claims.length ? whatHappensNext() : ''}
+    ${whatHappensNext(claims)}
   `;
 }
 
-/** Shown under the claims list, not the empty state — the empty state already
- *  has its own illustration and copy.
+/** Shown under the claims list, not the empty state — the empty state has its
+ *  own illustration and copy.
  *
  *  This exists because the populated list was one card and a button on an
  *  otherwise bare screen (visual QA finding, three rounds running), and because
  *  the questions it answers are the ones this membership actually rings member
- *  services about. It's real information, not filler to fill height. */
-function whatHappensNext() {
+ *  services about. It's real information, not filler placed to fill height.
+ *
+ *  It branches on state, because the first version didn't and that was worse
+ *  than saying nothing: it told Debbie, whose claim had just been DENIED, that
+ *  "we check your claim against your policy, most take about two weeks" and
+ *  that "when there's a decision you'll get a notice." Future-tense intake
+ *  guidance under a terminal state is exactly the "never make someone guess a
+ *  status" failure docs/01 principle 2 rules out. */
+function whatHappensNext(claims) {
+  if (!claims.length) return '';
+  const anyOpen = claims.some((c) => !['Paid', 'Denied'].includes(c.status));
+  const anyDenied = claims.some((c) => c.status === 'Denied');
+
+  if (anyOpen) {
+    return html`<div class="card stack-sm">
+      <h2 class="card__title">What happens next</h2>
+      <ol class="next-steps">
+        <li>We check your claim against your policy. Most take about two weeks.</li>
+        <li>If we need anything else from you, we'll write to you in MyMailbox.</li>
+        <li>
+          When there's a decision you'll get a notice, and this page will show it.
+          Approved claims are paid to you directly.
+        </li>
+      </ol>
+      <p class="card__meta">You don't need to do anything while a claim is being worked on.</p>
+    </div>`;
+  }
+
+  if (anyDenied) {
+    return html`<div class="card stack-sm">
+      <h2 class="card__title">If you disagree with a decision</h2>
+      <p>
+        You can ask us to look at a denied claim again. Open the claim above to see the
+        reason, and what would change the outcome.
+      </p>
+      <p class="card__meta">
+        You have 180 days from the decision to ask for a review. Call ${SERVICE_NUMBER} or
+        send us a message from MyMailbox.
+      </p>
+    </div>`;
+  }
+
   return html`<div class="card stack-sm">
-    <h2 class="card__title">What happens next</h2>
-    <ol class="next-steps">
-      <li>We check your claim against your policy. Most take about two weeks.</li>
-      <li>If we need anything else from you, we'll write to you in MyMailbox.</li>
-      <li>
-        When there's a decision you'll get a notice, and this page will show it. Approved
-        claims are paid to you directly.
-      </li>
-    </ol>
+    <h2 class="card__title">About your payment</h2>
+    <p>
+      Paid claims are sent to you directly. Allow a few business days for the money to
+      reach your account after the date shown on the claim.
+    </p>
     <p class="card__meta">
-      You don't need to do anything while a claim is being worked on.
+      Anything not right? Call ${SERVICE_NUMBER} or send us a message from MyMailbox.
     </p>
   </div>`;
 }

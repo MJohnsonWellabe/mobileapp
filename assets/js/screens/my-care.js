@@ -93,7 +93,7 @@ page({
             class="input"
             name="q"
             type="search"
-            placeholder="Dentist, physical therapy, a name…"
+            placeholder="Search care near you"
             value="${esc(v.query ?? '')}"
             data-focus-key="q"
           />

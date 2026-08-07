@@ -531,12 +531,21 @@ a {
 .data-row:last-child {
   border-bottom: 0;
 }
+/* Both columns shrink. The label used to be `flex: none`, which was harmless at
+   17px body text and became a real bug at 21px: an unshrinkable label pushed the
+   value clean off the right edge of a 390px phone, so payment-history rows
+   rendered "$148" for $148.50 with the "Paid" pill sliced in half, and policy
+   numbers sat outside their own card (visual QA finding, both reviewers). A
+   value must never be the thing that gets cut — it's the information. */
 .data-row__label {
-  flex: none;
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
+  overflow-wrap: anywhere;
 }
 .data-row__value {
+  flex: 0 1 auto;
   text-align: right;
   min-width: 0;
   overflow-wrap: anywhere;

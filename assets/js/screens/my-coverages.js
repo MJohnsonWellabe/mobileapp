@@ -12,12 +12,12 @@ import {
   addMonths,
   startOfToday,
   titleCase,
+  SERVICE_NUMBER,
 } from '../format.js';
 import { html, esc, dataRow, button, toast, on, illustration } from '../ui.js';
 import { icons, wellabeMark } from '../icons.js';
 import { setTitle } from '../app-shell.js';
 
-const SERVICE_NUMBER = '1-800-555-0199';
 
 /** The six product lines, with the copy a member sees when picking one to add. */
 const PRODUCT_CATALOG = {

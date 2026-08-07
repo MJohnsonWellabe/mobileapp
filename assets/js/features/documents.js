@@ -11,9 +11,8 @@
 
 import { html, esc } from '../ui.js';
 import { wellabeMark } from '../icons.js';
-import { formatDate, PRODUCT_LABELS } from '../format.js';
+import { formatDate, PRODUCT_LABELS, SERVICE_NUMBER } from '../format.js';
 
-const SERVICE_NUMBER = '1-800-555-0199';
 
 export function renderDocument(doc, user) {
   const body = BODIES[doc.renderer]?.(doc.payload, user) ?? '';

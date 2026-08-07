@@ -188,17 +188,21 @@
 
     --color-primary: #4cc6d8;
     --color-primary-pressed: #34a8ba;
-    --color-primary-tint: #0f2a2d;
+    /* Status-pill fills. Raised from a near-black set: at --color-surface
+       #1a2024 the originals were only a few percent lighter than the card, so
+       a pill read as loose coloured text rather than a badge (visual QA
+       finding). A pill has to look like a surface in both themes. */
+    --color-primary-tint: #17414a;
     --color-on-primary: #06181d;
 
     --color-success: #43c98a;
-    --color-success-tint: #0f2318;
+    --color-success-tint: #17392a;
     --color-on-success: #04150d;
     --color-warning: #f0923f;
-    --color-warning-tint: #2e1c0c;
+    --color-warning-tint: #4a2f14;
     --color-on-warning: #1f1205;
     --color-danger: #e8574c;
-    --color-danger-tint: #2e120f;
+    --color-danger-tint: #4a201c;
     --color-on-danger: #250906;
 
     --color-tier-bronze: #c98f52;
