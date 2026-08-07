@@ -789,7 +789,17 @@ a.data-row:active {
 
 /* ==================================================== empty states ======== */
 
+/* Grows into whatever vertical room `.app-main`'s flex column has spare, and
+   centres itself in it. `.app-main`'s min-height alone wasn't enough for empty
+   states: the card stopped where its content stopped and left a ~200px dead
+   band above the tab bar, which is exactly the "doesn't fill the phone"
+   complaint. The trailing `.illustration` trick doesn't help here — an empty
+   state's art is at the TOP of the block, not after it. */
 .empty {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
   text-align: center;
   padding: var(--space-6) var(--space-4);
 }

@@ -68,10 +68,15 @@
   gap: 0;
   background: var(--color-chrome-2);
 }
+/* space-3, not space-4: at the large-print scale the seven tab labels wrapped
+   onto three rows, spending 168px of a 844px phone on navigation before any
+   member data appeared. Tightening the horizontal padding lands them in two
+   rows at 390px without shrinking the labels themselves or dropping below the
+   tap-target floor, which the min-height still enforces. */
 .admin-tab {
   flex: none;
   min-height: var(--tap-target-min);
-  padding: 0 var(--space-4);
+  padding: 0 var(--space-3);
   border: 0;
   border-bottom: 3px solid transparent;
   background: none;
