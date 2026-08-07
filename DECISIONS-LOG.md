@@ -1371,3 +1371,57 @@ stage bar regained the "Step 4 of 4" prefix every other card carries, so paid an
 longer differ by hue alone; and the segmented control's unselected labels went back to
 secondary ink, because promoting them to full ink fixed "looks disabled" but overshot into
 making the *inactive* tabs look heavier than the active one.
+
+### Home was the last screen still contradicting itself
+
+Both reviewers came back FAIL again, and again on the same screen, and again
+independently: April's Home. Worth recording because the correction took three attempts
+and the first two were both mine.
+
+Version one said "One of your policies needs attention." in the same saturated yellow that
+tells a healthy member "You're covered". Version two removed that line — which fixed the
+false reassurance and introduced a new problem: April got a bare yellow greeting, no status
+at all, still the largest and brightest object on her screen, still sitting directly above
+the fact that she owes $174, and now visibly missing the second line every other member's
+hero has. One reviewer called that "the missing subline reads as a bug, not a decision."
+The other put it more usefully: MyPayments and MyCoverages already solve this by *replacing*
+the yellow band with the attention band, and Home was the one place the app hadn't applied
+its own fix.
+
+So Home's hero now becomes the attention band when something is wrong — warning surface,
+alert icon, the problem stated plainly, and the action inside the band. The greeting drops
+to an eyebrow above it, because a name is not the news. Only the most urgent bad-news item
+is promoted; the rest keep the grouped list below, so a member with three problems doesn't
+get three heroes. Good news ('accent' tone) is never promoted, which preserves the earlier
+decision that "Needs your attention" must not be where an unlocked reward shows up.
+
+The other blocking finding was the same shape one screen over. Debbie's denied-claim band
+said "You can ask us to look at it again" and contained no control, while the largest,
+highest-contrast button on the screen read **File a new claim**. A member following the
+obvious action would have filed a duplicate instead of appealing. The rule that came out of
+it is now explicit in `headlineBand()`'s contract: **if a band names an action, the control
+for that action lives inside the band.** April's payments band already did this; Debbie's
+now carries a call button, and "File a new claim" drops to secondary on that state, because
+two full-width primary buttons on one screen means the louder one wins and here the louder
+one was wrong.
+
+Also fixed: the dark-mode `.today-card` had become a bare yellow outline. Converting it to
+`--color-surface` last round solved the glare panel but left the fill within a couple of
+percent of the page behind it, so the only remaining brand element was a 1px border —
+simultaneously a light/dark parity break and yellow doing the one job docs/01 forbids it.
+It now uses a warm dark fill and stays a filled panel in both themes.
+
+### Deliberately not done, and why
+
+- **Add-to-wallet, screen-brightness boost, and share-to-provider on the ID card.** One
+  reviewer's "one change" for the competitive bar. These are real OS and platform
+  integrations; building fake versions would violate CLAUDE.md's first ground rule, and the
+  brief lists no third-party integration as in scope. The screen-fill half of that finding
+  is fair and still open.
+- **Removing "Back" from tab-root screens and "Log Out" from the Home header.** Both are
+  defensible as native-app polish, and both remove an escape hatch that this specific
+  audience uses. Worth deciding with the human rather than unilaterally.
+- **Dennis's 2017 welcome notice.** Flagged three times. It is plausible seed data for a
+  long-tenured member, but it is the *only* item in his mailbox under a "Recent" heading,
+  which does make the screen look abandoned. Left as-is because docs/03 governs seed state
+  and changing a member's tenure story is a product decision, not a styling fix.

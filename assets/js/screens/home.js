@@ -27,7 +27,7 @@ import {
   PRODUCT_LABELS,
   deriveHealthStats,
 } from '../format.js';
-import { html, esc, mount, on, sectionCard, skeletonList, toast, preloadIllustrations, illustration } from '../ui.js';
+import { html, esc, mount, on, sectionCard, skeletonList, toast, preloadIllustrations, illustration, headlineBand } from '../ui.js';
 import { icons, wellabeMark } from '../icons.js';
 import { attentionItems } from '../notices.js';
 import { toggleChallenge, challengeForDate } from '../features/health.js';
@@ -107,14 +107,9 @@ function render(state) {
   const unread = state.notices.filter((n) => !n.read).length;
 
   return html`
-    <div class="home-hero">
-      <h1 class="home-greeting">Hello, ${esc(user.firstName)}</h1>
-      ${coverageLine(policies, today)
-        ? html`<p class="home-sub">${esc(coverageLine(policies, today))}</p>`
-        : ''}
-    </div>
-
-    ${attention.length ? attentionCard(attention) : ''} ${todayCard(stats, todayLog, today)}
+    ${hero(user, policies, attention, today)}
+    ${attentionCard(attention.filter((i) => i !== promotedItem(attention)))}
+    ${todayCard(stats, todayLog, today)}
 
     <div>
       <h2 class="section-heading">Your Wellabe</h2>
@@ -182,6 +177,61 @@ function render(state) {
 
 /** The derived "needs your attention" group, shown at the top of Home as well as in
  *  MyMailbox. Never stored — see notices.js. */
+/**
+ * The first thing on Home, and it has to reflect the member's actual state.
+ *
+ * This went through three wrong versions. First it said "One of your policies
+ * needs attention." in the same reassuring saturated yellow that tells a healthy
+ * member "You're covered" — so April's lapsed coverage looked, at a glance,
+ * exactly like Dave's healthy coverage. Removing that line was the second
+ * version, and it left April with a bare yellow greeting and no status at all:
+ * still the largest, brightest object on her screen, still sitting on top of the
+ * fact that she owes $174, and now visibly missing the second line every other
+ * member's hero has. Both reviewers called that blocking, independently, and
+ * both said the same thing — Home was the one screen left where the app hadn't
+ * applied its own fix.
+ *
+ * So the hero now *becomes* the attention band when there is something wrong,
+ * exactly as MyPayments, MyCoverages and MyClaims already do: warning surface,
+ * alert icon, the problem stated plainly, and the action inside the band rather
+ * than in a separate card underneath it. The greeting drops to an eyebrow, since
+ * a name is not the news. Everything else about a calm Home is unchanged.
+ *
+ * Only the most urgent item is promoted — the rest keep the existing grouped
+ * list below, so a member with three problems doesn't get three heroes.
+ */
+/** The one attention item the hero absorbs — the most urgent bad-news item, if
+ *  any. Good news ('accent' tone) never becomes the hero: an unlocked reward in
+ *  a warning band would be the same "header that cries wolf" mistake
+ *  attentionCard() already splits its groups to avoid. */
+function promotedItem(attention) {
+  return attention.find((i) => i.tone !== 'accent');
+}
+
+function hero(user, policies, attention, today) {
+  const top = promotedItem(attention);
+  if (top) {
+    return headlineBand({
+      tone: 'attention',
+      icon: 'alert',
+      eyebrow: `Hello, ${user.firstName}`,
+      headline: top.title,
+      note: top.body,
+      action: html`<a class="btn btn--primary btn--block" href="${esc(targetHref(top.actionTarget))}"
+        >${esc(top.actionLabel)}</a
+      >`,
+    });
+  }
+
+  const sub = coverageLine(policies, today);
+  return html`
+    <div class="home-hero">
+      <h1 class="home-greeting">Hello, ${esc(user.firstName)}</h1>
+      ${sub ? html`<p class="home-sub">${esc(sub)}</p>` : ''}
+    </div>
+  `;
+}
+
 function attentionCard(items) {
   // "Needs your attention" has to mean "something is wrong." An unlocked
   // reward arriving under that header taught members to brace for a problem

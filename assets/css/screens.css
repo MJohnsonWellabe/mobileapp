@@ -125,7 +125,14 @@
     --color-text-secondary: unset;
     --color-surface: unset;
     --color-track: unset;
-    background: var(--color-surface);
+    /* A warm dark fill, not --color-surface. Using the plain card surface made
+       this read as a bare yellow outline on Home: the fill sat within a couple
+       of percent of the page behind it, so the only thing left of the brand was
+       a 1px border — which is both a light/dark parity break and yellow doing
+       the one job docs/01 forbids it (visual QA finding). This is the brand
+       yellow at low opacity over the dark page, so it stays a filled panel in
+       both themes and the ink on it is still the theme's own. */
+    background: #2a2411;
     color: var(--color-text-primary);
   }
 }
@@ -1335,6 +1342,20 @@
   font-size: var(--text-xl);
   font-weight: var(--weight-bold);
   line-height: var(--leading-heading);
+}
+.balance__headline svg {
+  width: 24px;
+  height: 24px;
+  vertical-align: -4px;
+  margin-right: var(--space-2);
+}
+/* Sits above the headline. Home uses it for the greeting: a member's name is
+   not the news when their coverage has lapsed, but it shouldn't disappear
+   either. */
+.balance__eyebrow {
+  display: block;
+  font-size: var(--text-base);
+  margin-bottom: var(--space-1);
 }
 /* The caption carries a status icon in both tones, so the band never signals by
    colour alone (docs/01 principle 2). */

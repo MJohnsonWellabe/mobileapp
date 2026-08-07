@@ -124,7 +124,14 @@ function claimsHeadline(claims) {
       icon: 'alert',
       headline: claims.length === 1 ? "Your claim wasn't approved" : 'None of your claims were approved',
       caption: 'A decision has been made',
-      note: 'You can ask us to look at it again. Open the claim below to see the reason.',
+      note: 'You can ask us to look at it again — we have 180 days to review it.',
+      // The band told her to ask for a review and then gave her nothing to
+      // press, while the biggest, highest-contrast button on the screen said
+      // "File a new claim" — so the one obvious action was the wrong one, and a
+      // member following it files a duplicate instead of appealing (visual QA
+      // finding, blocking). Same rule as April's payments band: if a band names
+      // an action, the control for it lives inside the band.
+      action: callButton('Call us to ask for a review'),
     });
   }
 
@@ -137,6 +144,13 @@ function claimsHeadline(claims) {
 }
 
 function listView(claims, policies) {
+  // Demoted to secondary wherever the band above already carries the action a
+  // member is being told to take. Two full-width primary buttons competing on
+  // one screen means the louder one wins, and here the louder one was the wrong
+  // one — "File a new claim" is not what someone whose claim was just denied
+  // should be nudged into doing.
+  const bandOwnsTheAction = claims.length && claims.every((c) => c.status === 'Denied');
+
   return html`
     ${claims.length ? claimsHeadline(claims) : ''}
     ${claims.length
@@ -152,7 +166,10 @@ function listView(claims, policies) {
           body: "When you need to file one, it takes a couple of minutes and you can follow it right here.",
         })}
 
-    <button class="btn btn--primary btn--block" data-action="new">
+    <button
+      class="btn ${bandOwnsTheAction ? 'btn--secondary' : 'btn--primary'} btn--block"
+      data-action="new"
+    >
       ${icons.plus()} File a new claim
     </button>
 
@@ -224,9 +241,9 @@ function whatHappensNext(claims) {
    to reach a person to be the most obvious thing in front of them — this is the
    single most common complaint in reviews of the competitor apps researched for
    docs/01. Same tel: pattern as the ID card screen; the dialler is the OS's. */
-function callButton() {
+function callButton(label) {
   return html`<a class="btn btn--secondary btn--block" href="tel:${SERVICE_NUMBER.replace(/-/g, '')}">
-    ${icons.phone()} Call ${SERVICE_NUMBER}
+    ${icons.phone()} ${esc(label ?? `Call ${SERVICE_NUMBER}`)}
   </a>`;
 }
 

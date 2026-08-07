@@ -154,16 +154,20 @@ export function sectionCard({ href, icon, title, status, badge, statusPrefix, st
  * @param {string} [action]   optional HTML for a control inside the band, so an
  *        "amount due" band isn't a dead end at the top of the screen
  */
-export function headlineBand({ figure, headline, caption, note, tone = 'brand', icon, action }) {
+export function headlineBand({ figure, headline, caption, note, tone = 'brand', icon, action, eyebrow }) {
   const attention = tone === 'attention';
+  // The icon belongs with whichever line is the most prominent, so it reads as
+  // marking the message rather than decorating a subtitle. With a headline that
+  // is the headline; with a bare figure it falls to the caption, which is the
+  // line that says what the figure means.
+  const mark = icon ? icons[icon]() : '';
   return html`<div class="card ${attention ? 'card--attention' : 'card--accent-solid'} headline-band">
     <div class="balance">
+      ${eyebrow ? html`<span class="balance__eyebrow">${esc(eyebrow)}</span>` : ''}
       ${figure ? html`<span class="balance__number">${esc(figure)}</span>` : ''}
-      ${headline ? html`<span class="balance__headline">${esc(headline)}</span>` : ''}
+      ${headline ? html`<span class="balance__headline">${mark}${esc(headline)}</span>` : ''}
       ${caption
-        ? html`<span class="balance__unit">
-            ${icon ? icons[icon]() : ''}${esc(caption)}
-          </span>`
+        ? html`<span class="balance__unit">${headline ? '' : mark}${esc(caption)}</span>`
         : ''}
     </div>
     ${note ? html`<p class="headline-note">${esc(note)}</p>` : ''}
