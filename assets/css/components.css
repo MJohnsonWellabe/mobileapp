@@ -494,8 +494,8 @@ a {
   color: var(--color-primary);
 }
 .pill--neutral {
-  background: var(--color-surface-sunken);
-  color: var(--color-text-secondary);
+  background: var(--color-neutral-tint);
+  color: var(--color-text-primary);
 }
 .pill--accent {
   background: var(--color-brand-yellow);
@@ -520,32 +520,39 @@ a {
 
 /* ======================================================= data row ========= */
 
+/* Wraps, so a long value drops to its own full-width line beneath the label
+   rather than fighting it for room on one. At 21px body text a label and a
+   value genuinely cannot always share a 390px row: "Email" next to
+   dave.whitfield@example.com is over budget however the space is divided. Two
+   earlier attempts both failed on that. `flex: none` on the label pushed the
+   value off the right edge ("$148" for $148.50, the "Paid" pill sliced in
+   half); letting the label shrink instead broke it mid-word, rendering "Ema /
+   il". Wrapping is the only arrangement where neither side is cut. */
 .data-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
-  gap: var(--space-4);
+  gap: var(--space-1) var(--space-4);
   padding: var(--space-3) 0;
   border-bottom: 1px solid var(--color-border);
 }
 .data-row:last-child {
   border-bottom: 0;
 }
-/* Both columns shrink. The label used to be `flex: none`, which was harmless at
-   17px body text and became a real bug at 21px: an unshrinkable label pushed the
-   value clean off the right edge of a 390px phone, so payment-history rows
-   rendered "$148" for $148.50 with the "Paid" pill sliced in half, and policy
-   numbers sat outside their own card (visual QA finding, both reviewers). A
-   value must never be the thing that gets cut — it's the information. */
+/* No `min-width: 0` and `break-word` rather than `anywhere`: both would let the
+   automatic minimum size fall below one word, which is exactly how "Email"
+   became "Ema / il". The label's floor is its longest word, full stop. */
 .data-row__label {
-  flex: 1 1 auto;
-  min-width: 0;
+  flex: 0 1 auto;
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
 }
+/* Grows, so when it does wrap onto its own line it fills that line and stays
+   right-aligned with every other value in the card. */
 .data-row__value {
-  flex: 0 1 auto;
+  flex: 1 1 auto;
   text-align: right;
   min-width: 0;
   overflow-wrap: anywhere;

@@ -37,8 +37,9 @@ import {
   PRODUCT_LABELS,
   startOfToday,
   round2,
+  PERIOD_MONTHS,
 } from '../format.js';
-import { html, esc, dataRow, button, toast, on, parseAmount, illustration } from '../ui.js';
+import { html, esc, dataRow, button, toast, on, parseAmount, illustration, headlineBand } from '../ui.js';
 import { icons } from '../icons.js';
 import { noticePaymentReceived, noticePaymentFailed } from '../notices.js';
 
@@ -140,8 +141,46 @@ page({
 
 /* ------------------------------------------------------------- views ----- */
 
+/** The one number this screen is about, in the brand band.
+ *
+ *  Which number that is depends on the member's state, and getting that wrong
+ *  would be worse than having no band at all. If anything is behind, the figure
+ *  is what they owe right now — the thing they opened MyPayments to deal with.
+ *  If everything is current, it's what they pay each month, which is the
+ *  question a member with nothing outstanding is actually asking.
+ *
+ *  Non-monthly premiums are normalised to a monthly equivalent so quarterly and
+ *  annual policies can be added to monthly ones; the note says "on average" so
+ *  the figure is never read as a bill that is about to arrive. */
+function paymentsHeadline(policies, today) {
+  const behind = policies.filter((p) => coverageStatus(p, today).key !== 'active');
+
+  if (behind.length) {
+    const owed = behind.reduce((sum, p) => sum + amountDue(p, today).amount, 0);
+    return headlineBand({
+      figure: formatMoney(round2(owed)),
+      caption: behind.length === 1 ? 'due now on 1 policy' : `due now across ${behind.length} policies`,
+      note: 'Paying this brings your coverage back to active.',
+    });
+  }
+
+  const monthly = policies.reduce(
+    (sum, p) => sum + p.premiumAmount / PERIOD_MONTHS[p.premiumFrequency],
+    0,
+  );
+  const next = policies
+    .map((p) => p.paidThroughDate)
+    .sort()[0];
+  return headlineBand({
+    figure: formatMoney(round2(monthly)),
+    caption: 'a month, on average',
+    note: `Everything is paid up. Your next premium is due ${formatDate(next)}.`,
+  });
+}
+
 function listView(policies, user, payments, today) {
   return html`
+    ${policies.length ? paymentsHeadline(policies, today) : ''}
     ${policies.length
       ? policies.map((policy) => {
           const status = coverageStatus(policy, today);

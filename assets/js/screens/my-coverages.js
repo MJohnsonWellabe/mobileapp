@@ -14,7 +14,7 @@ import {
   titleCase,
   SERVICE_NUMBER,
 } from '../format.js';
-import { html, esc, dataRow, button, toast, on, illustration } from '../ui.js';
+import { html, esc, dataRow, button, toast, on, illustration, headlineBand } from '../ui.js';
 import { icons, wellabeMark } from '../icons.js';
 import { setTitle } from '../app-shell.js';
 
@@ -172,7 +172,20 @@ function listView(policies, user, health, today) {
   const held = new Set(policies.map((p) => p.product));
   const available = Object.keys(PRODUCT_CATALOG).filter((p) => !held.has(p));
 
+  const statuses = policies.map((p) => coverageStatus(p, today));
+  const activeCount = statuses.filter((s) => s.key === 'active').length;
+  const needsAttention = statuses.length - activeCount;
+
   return html`
+    ${policies.length
+      ? headlineBand({
+          figure: String(policies.length),
+          caption: policies.length === 1 ? 'policy with Wellabe' : 'policies with Wellabe',
+          note: needsAttention
+            ? `${activeCount} active · ${needsAttention} needs your attention`
+            : 'All active and paid up to date',
+        })
+      : ''}
     ${health?.qualifiesForGuaranteedIssue && !held.has('hospitalIndemnity')
       ? html`<div class="card card--accent stack-sm">
           <h2 class="card__title">You've unlocked a no-health-questions offer</h2>

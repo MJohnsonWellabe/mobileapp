@@ -90,17 +90,29 @@ export function noticeClaimSubmitted({ userId, claim }) {
   });
 }
 
+/* Subjects are written to the member, not to the database. The earlier form was
+   `Claim ${claimNumber} is now ${status}` — machine voice, a capitalised status
+   token dropped mid-sentence, and long enough that the inbox row truncated it
+   mid-identifier ("Claim CLM-2026-…") once the "New" pill took its share of the
+   width. The claim number still appears, in the body, where there's room for
+   it; the subject line's job is to say what happened. */
 export function noticeClaimAdvanced({ userId, claim, status }) {
-  const copy = {
-    Processing: 'is now being processed. A claims specialist has picked it up.',
-    Reviewing: 'is under review. This is the last stage before a decision.',
-    Paid: 'has been paid.',
-    Denied: 'has been denied.',
+  const { subject, copy } = {
+    Processing: {
+      subject: "We're processing your claim",
+      copy: 'is now being processed. A claims specialist has picked it up.',
+    },
+    Reviewing: {
+      subject: 'Your claim is under review',
+      copy: 'is under review. This is the last stage before a decision.',
+    },
+    Paid: { subject: 'Your claim has been paid', copy: 'has been paid.' },
+    Denied: { subject: 'Your claim was denied', copy: 'has been denied.' },
   }[status];
   return writeNotice({
     userId,
     type: 'claimStatus',
-    subject: `Claim ${claim.claimNumber} is now ${status}`,
+    subject,
     body: `Your claim ${claim.claimNumber} ${copy}`,
     actionLabel: 'View the details',
     actionTarget: `claims/${claim.id}`,

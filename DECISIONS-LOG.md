@@ -1231,3 +1231,82 @@ and is not overshot, and then flagged a set of things that were only latent bugs
 The general lesson worth keeping: a type-scale change is not a cosmetic change. Every
 `flex: none`, every fixed height, every `nowrap`, and every "it fits" assumption in the
 stylesheet is an untested claim that only holds at the old size.
+
+### Brand bands on the three tabs members actually live in
+
+Both reviewers, working from different marks, converged on the same "one change":
+MyCoverages, MyPayments and MyClaims each opened onto a white label/value table with no
+brand colour anywhere in the first screenful, while Home and MyRewards — the two screens
+that open on a filled yellow panel carrying a headline figure — were the two they graded
+strongest. The app had a branded front door and unbranded rooms behind it.
+
+`headlineBand()` in `ui.js` is the Home/MyRewards pattern extracted and reused, so this is
+one component in three more places rather than three new designs. Yellow stays a
+background: everything drawn on the band resolves through `--color-on-brand-yellow` via
+`.card--accent-solid`, so the accessibility rule is untouched.
+
+What each band says took more care than how it looks, because a headline figure that is
+the *wrong* figure is worse than no band:
+
+- **MyPayments** branches on state. Anyone behind sees what they owe right now — the thing
+  they opened the screen to deal with. Anyone current sees their monthly outlay, with
+  non-monthly premiums normalised to a monthly equivalent and the note saying "on average"
+  so it can't be misread as a bill about to arrive.
+- **MyClaims** leads with open claims when any are moving, and with money actually paid out
+  when everything is settled.
+- **MyCoverages** leads with the policy count, and the note distinguishes "all active" from
+  "n needs your attention" rather than asserting a state it hasn't checked.
+
+The empty states keep their own artwork and headline and get no band.
+
+### Containment, not literals: the third instance of one bug
+
+Two more elements turned out to be flipping for dark mode while the panel behind them
+didn't: the tier pill on the MyRewards yellow hero (Bronze and Silver went near-black on
+saturated yellow while Gold, drawing on the never-flipping brand tint, stayed white), and
+everything inside `.today-card`.
+
+`.today-card` was the serious one. Keeping it cream in dark mode was a decision made two
+rounds earlier, and it was wrong on both counts it was meant to serve. It put a full-width
+glare panel in the middle of a black page as the second element on Home. And the streak
+ring inside it still resolved the *dark* `--color-track` (white at 16%) against that cream
+fill, so for any member with a zero streak the ring vanished entirely and left a bare "0"
+floating with no circle around it — a rendering failure, not a design choice. Nine
+screenshots, flagged independently by both reviewers.
+
+The fix generalises the lesson from the ID card and `.challenge__detail`: a component
+pinned to one theme must re-pin **every token its subtree resolves**, on the container,
+once — not leave descendants to hardcode literals one bug report at a time. Both
+`.today-card` and `.card--accent-solid` now do that. `.today-card` additionally releases
+those pins in dark mode with `--color-text-secondary: unset` (on a custom property `unset`
+means inherit, so each falls back to the dark `:root` value without restating it) and
+converts to an ordinary dark surface, keeping its brand identity through the yellow border
+and the yellow ring rather than a light fill. Three literal colours came out of the
+stylesheet in the process.
+
+Related: `--color-neutral-tint` is now its own token rather than borrowing
+`--color-surface-sunken`. The two roles pull opposite ways once inverted — a sunken well
+must go *darker* than its card in dark mode, a raised badge must go *lighter* — and sharing
+one value gave the rewards store's point-cost pills a near-black fill on a dark card, where
+the pill shape simply disappeared.
+
+### Smaller things this round, worth naming
+
+- Pill **label** colours had to be lightened after the tints were raised last round.
+  "Lapsed" and "Denied" had become the dimmest text on their own card. Those are the two
+  words in this app a member must not misread.
+- The **segmented control** failed in opposite directions by theme: invisible track in dark
+  (sunken fill within a few percent of the page), and in light a grey track under muted
+  grey labels that read as *disabled* — and an inactive tab that looks disabled is one a
+  member never taps. Visible edge in both themes now, unselected labels at full ink.
+- The **member services number** in MyClaims was plain text in the dimmest paragraph on the
+  screen. Someone who has just been told their claim was denied needs the way to reach a
+  person to be the most obvious thing in front of them. It's a `tel:` button now, matching
+  the ID card screen.
+- **Claim cards never showed the amount.** The claim ID was set in the largest type on the
+  card while the money wasn't on it at all.
+- **Notice subjects were written to the database, not the member** — `Claim CLM-2026-00431
+  is now Reviewing`, long enough to truncate mid-identifier once the "New" pill took its
+  share of the row. Now "Your claim is under review", with the number in the body. Changed
+  in both `notices.js` and `seed-mailbox.js`, since a seeded notice and a live one for the
+  same event must not be written in two different voices.

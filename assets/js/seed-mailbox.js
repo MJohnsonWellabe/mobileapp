@@ -174,6 +174,15 @@ export function buildMailbox({ put, today, year, policyById }) {
     { key: 'matt', claim: 'claim-matt-hi', number: '00431', status: 'Reviewing', offset: -5 },
   ];
 
+  /* Kept in step with noticeClaimAdvanced() in notices.js — a seeded notice and
+     a live one for the same event must not be written in two different voices. */
+  const CLAIM_SUBJECT = {
+    Processing: "We're processing your claim",
+    Reviewing: 'Your claim is under review',
+    Paid: 'Your claim has been paid',
+    Denied: 'Your claim was denied',
+  };
+
   const CLAIM_BODY = {
     Processing: 'is now being processed. A claims specialist has picked it up, and we will let you know as soon as it moves to review.',
     Reviewing: 'is under review. This is the last stage before a decision, and it usually takes a few days.',
@@ -185,7 +194,7 @@ export function buildMailbox({ put, today, year, policyById }) {
     put(`notices/notice-${n.claim}-${n.status.toLowerCase()}`, {
       userId: `user-${n.key}`,
       type: 'claimStatus',
-      subject: `Claim CLM-${year}-${n.number} is now ${n.status}`,
+      subject: CLAIM_SUBJECT[n.status],
       body: `Your claim CLM-${year}-${n.number} ${CLAIM_BODY[n.status]}`,
       actionLabel: 'View the details',
       actionTarget: `claims/${n.claim}`,

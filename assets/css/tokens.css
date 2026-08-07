@@ -66,6 +66,13 @@
   /* ---- Surfaces ---------------------------------------------------------- */
   --color-surface: #ffffff;
   --color-surface-sunken: #ece7e2;
+  /* A neutral badge fill. Separate from --color-surface-sunken because the two
+     roles pull opposite ways once inverted: "sunken" has to go DARKER than the
+     card in dark mode to read as a recessed well, while a badge has to go
+     LIGHTER to read as a raised chip. Sharing one token gave the rewards store's
+     point-cost pills a near-black fill on a dark card, where the pill shape
+     simply disappeared (visual QA finding). */
+  --color-neutral-tint: #ece7e2;
   --color-background: #f3efec;
   --color-text-primary: #14181b;
   --color-text-secondary: #55606b;
@@ -195,13 +202,21 @@
     --color-primary-tint: #17414a;
     --color-on-primary: #06181d;
 
-    --color-success: #43c98a;
+    /* Raising the tints above (so a pill reads as a badge) cost contrast against
+       these, which are the pill LABEL colours. "Lapsed" and "Denied" ended up
+       the dimmest text on their own card — red-on-maroon, well under the body
+       copy around them — which is unacceptable for the two words in this app a
+       member absolutely must not misread (visual QA finding). Each label is
+       lightened until it clears 4.5:1 on its own tint, which also keeps it
+       legible on --color-surface where these same tokens carry icon and text
+       colour. */
+    --color-success: #6fe0a8;
     --color-success-tint: #17392a;
     --color-on-success: #04150d;
-    --color-warning: #f0923f;
+    --color-warning: #ffb474;
     --color-warning-tint: #4a2f14;
     --color-on-warning: #1f1205;
-    --color-danger: #e8574c;
+    --color-danger: #ff9c92;
     --color-danger-tint: #4a201c;
     --color-on-danger: #250906;
 
@@ -216,6 +231,9 @@
        on — at a near-match the login fields were separated from their card by
        a hairline alone and effectively disappeared (visual QA finding). */
     --color-surface-sunken: #0b0f12;
+    /* Lighter than --color-surface, where sunken is darker — see the token's
+       comment in :root for why the two can't be one value. */
+    --color-neutral-tint: #333d44;
     --color-background: #101417;
     --color-text-primary: #f2f4f5;
     --color-text-secondary: #a9b2b9;

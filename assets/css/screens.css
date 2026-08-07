@@ -92,17 +92,46 @@
 
 /* The Today card is pinned above everything else: completing the daily habit
    should take zero navigation (docs/01 §Navigation). */
+/* In LIGHT mode this is a cream panel, so every token a descendant might
+   resolve gets re-pinned here once, on the container — rather than each child
+   hardcoding a literal, which is what this used to do in four separate places
+   and which is how the dark-mode bugs below got in one at a time.
+   In DARK mode (block further down) the whole card converts to an ordinary dark
+   surface and these pins are released. */
 .today-card {
+  --color-text-secondary: #55606b;
+  --color-surface: #ffffff;
+  --color-track: rgba(20, 24, 27, 0.12);
   background: var(--color-brand-yellow-tint);
   border: 1px solid var(--color-brand-yellow);
   border-radius: var(--radius-lg);
   padding: var(--space-4);
-  /* The tint doesn't flip for dark mode, so its ink can't either. */
   color: var(--color-on-brand-yellow);
+}
+/* The card keeps its brand identity in dark mode through the yellow border and
+   the yellow streak ring, not through a light fill.
+   Leaving it cream — the earlier decision — turned out to be wrong on both
+   counts it was supposed to serve. It put a full-width glare panel in the
+   middle of a black page as the second element on Home, and, worse, the ring
+   track inside it still resolved the DARK --color-track (white at 16%), so on
+   any member with a zero streak the ring vanished completely and left a bare
+   "0" floating with no circle around it. That reads as a rendering failure, not
+   a design choice. Both reviewers flagged it independently across nine
+   screenshots.
+   `unset` on a custom property means inherit, so each pin above simply falls
+   back to the dark :root value rather than being restated here. */
+@media screen {
+  :root[data-theme='dark'] .today-card {
+    --color-text-secondary: unset;
+    --color-surface: unset;
+    --color-track: unset;
+    background: var(--color-surface);
+    color: var(--color-text-primary);
+  }
 }
 .today-card .today-card__meta,
 .today-card .ring__unit {
-  color: #55606b;
+  color: var(--color-text-secondary);
 }
 .today-card__head {
   display: flex;
@@ -154,11 +183,8 @@
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  /* Literal light values, because .today-card's yellow tint doesn't flip for
-     dark mode — a surface-coloured box on it rendered as a black square on a
-     pale panel. Same reasoning as the tint itself. */
-  border: 2px solid #55606b;
-  background: #ffffff;
+  border: 2px solid var(--color-text-secondary);
+  background: var(--color-surface);
   color: transparent;
 }
 .challenge__box svg {
@@ -178,14 +204,9 @@
   flex: 1;
   min-width: 0;
 }
-/* Literal, not --color-text-secondary: this sits on .today-card's cream tint,
-   which deliberately does not flip for dark mode. The token does flip, so in
-   dark this rendered as near-white on cream — the palest text in the app, on a
-   card that appears on every member's home screen (visual QA finding, both
-   reviewers, four MyHealth screens each). */
 .challenge__detail {
   font-size: var(--text-sm);
-  color: #55606b;
+  color: var(--color-text-secondary);
 }
 
 /* Streak ring — brand yellow fill, which is legal because it is a shape and not
@@ -700,11 +721,20 @@
 
 /* ======================================================== mailbox ========= */
 
+/* The border is doing real work, not decoration. In dark mode the sunken fill
+   (#0b0f12) is within a few percent of the page background, so the track was
+   invisible and the two unselected labels floated loose on the page — the
+   control didn't read as a tab group at all. In light mode the opposite
+   complaint: a warm-grey track under muted grey labels read as *disabled*, and
+   an inactive tab that looks disabled is one a member never taps. So: a visible
+   edge in both themes, and unselected labels at full primary ink rather than
+   secondary. Selected still wins, via fill + weight + the primary hairline. */
 .segmented {
   display: flex;
   gap: 2px;
   padding: 3px;
   background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
 }
 .segmented__item {
@@ -716,7 +746,7 @@
   font: inherit;
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
-  color: var(--color-text-secondary);
+  color: var(--color-text-primary);
   cursor: pointer;
 }
 /* The raised pill relies on surface-vs-sunken lightness to read as selected.
@@ -1063,7 +1093,20 @@
    rather than just a tint, is the documented use case. Secondary text inside
    is re-pinned to --color-on-brand-yellow too, since --color-text-secondary
    (a muted grey) doesn't clear the contrast floor against solid yellow. */
+/* Same containment idea as .today-card: this panel is yellow in both themes, so
+   every token a descendant resolves is re-pinned to its light value here. The
+   tier pill is why — it flipped for dark while the yellow behind it didn't, so
+   Bronze and Silver rendered as near-black pills on saturated yellow while Gold
+   (which draws on the never-flipping brand tint) stayed white. Two tiers styled
+   one way and one the other, inside the app's flagship brand panel. */
 .card--accent-solid {
+  --color-surface: #ffffff;
+  --color-text-primary: #14181b;
+  --color-text-secondary: #55606b;
+  --color-tier-bronze: #8a5a2e;
+  --color-tier-bronze-tint: #f3e8dc;
+  --color-tier-silver: #5b6670;
+  --color-tier-silver-tint: #edeff0;
   background: var(--color-brand-yellow);
   border-color: var(--color-brand-yellow);
   color: var(--color-on-brand-yellow);
@@ -1234,4 +1277,22 @@
   display: block;
   font-size: var(--text-sm);
   color: var(--color-text-secondary);
+}
+
+/* The settled amount on a claim list card. Sized up rather than set as meta
+   text: it is the fact a member opens MyClaims to find, and it was previously
+   not on the card at all. */
+.claim-amount {
+  display: block;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+  color: var(--color-success);
+}
+
+/* Second line under a headlineBand() figure. Centred to match .balance above
+   it, and left at body size — the figure is the thing being read at a glance,
+   this is the sentence that explains it. */
+.headline-note {
+  text-align: center;
+  margin-top: var(--space-2);
 }

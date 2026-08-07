@@ -116,6 +116,33 @@ export function sectionCard({ href, icon, title, status, badge, statusPrefix, st
   </a>`;
 }
 
+/**
+ * A filled brand-yellow band carrying the one number a screen is about.
+ *
+ * Home and MyRewards already open on a yellow panel with a headline figure, and
+ * both reviewers judged those the strongest screens in the app. MyCoverages,
+ * MyPayments and MyClaims opened straight onto a white label/value table with no
+ * brand colour anywhere in the first screenful — the app had a branded front
+ * door and unbranded rooms behind it. This is the same component, reused, so the
+ * three tabs a member actually lives in get the same treatment.
+ *
+ * Yellow stays a background here, exactly as docs/01 requires: everything drawn
+ * on it resolves through --color-on-brand-yellow via `.card--accent-solid`.
+ *
+ * @param {string} figure   the number itself — kept short, it is set very large
+ * @param {string} caption  what the number means, in plain words
+ * @param {string} [note]   an optional second line, e.g. a date or a count
+ */
+export function headlineBand({ figure, caption, note }) {
+  return html`<div class="card card--accent-solid">
+    <div class="balance">
+      <span class="balance__number">${esc(figure)}</span>
+      <span class="balance__unit">${esc(caption)}</span>
+    </div>
+    ${note ? html`<p class="headline-note">${esc(note)}</p>` : ''}
+  </div>`;
+}
+
 export function button(label, { action, variant = 'primary', block, icon, type = 'button', href, disabled } = {}) {
   const cls = `btn btn--${variant}${block ? ' btn--block' : ''}`;
   const inner = `${icon ? icons[icon]() : ''}${esc(label)}`;

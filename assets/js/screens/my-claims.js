@@ -22,7 +22,7 @@ import {
 import { storage } from '../firebase-init.js';
 import { storageRef, uploadBytes, getDownloadURL } from '../../vendor/firebase.js';
 import { formatDate, formatDateTime, formatMoney, PRODUCT_LABELS, toDate, SERVICE_NUMBER } from '../format.js';
-import { html, esc, dataRow, button, toast, on, illustration, emptyState } from '../ui.js';
+import { html, esc, dataRow, button, toast, on, illustration, emptyState, headlineBand } from '../ui.js';
 import { icons } from '../icons.js';
 import { noticeClaimSubmitted } from '../notices.js';
 
@@ -88,8 +88,33 @@ page({
 
 /* ------------------------------------------------------------- views ----- */
 
+/** The brand band for MyClaims.
+ *
+ *  An open claim is the reason anyone opens this screen, so when there is one
+ *  the figure is how many are still moving. When everything is settled, the
+ *  figure becomes the money actually paid out — which is the other question a
+ *  member asks here, and the one the list cards never used to answer at all.
+ *  The empty state has its own artwork and headline, so it gets no band. */
+function claimsHeadline(claims) {
+  const open = claims.filter((c) => !['Paid', 'Denied'].includes(c.status));
+  if (open.length) {
+    return headlineBand({
+      figure: String(open.length),
+      caption: open.length === 1 ? 'claim in progress' : 'claims in progress',
+      note: `We'll write to you in MyMailbox each time ${open.length === 1 ? 'it moves' : 'one moves'} to a new stage.`,
+    });
+  }
+  const paidOut = claims.reduce((sum, c) => sum + (c.paidAmount ?? 0), 0);
+  return headlineBand({
+    figure: formatMoney(paidOut),
+    caption: 'paid to you so far',
+    note: `Across ${claims.length === 1 ? '1 settled claim' : `${claims.length} settled claims`}.`,
+  });
+}
+
 function listView(claims, policies) {
   return html`
+    ${claims.length ? claimsHeadline(claims) : ''}
     ${claims.length
       ? html`<div class="stack-sm">
           <h2 class="section-heading">
@@ -153,9 +178,9 @@ function whatHappensNext(claims) {
         reason, and what would change the outcome.
       </p>
       <p class="card__meta">
-        You have 180 days from the decision to ask for a review. Call ${SERVICE_NUMBER} or
-        send us a message from MyMailbox.
+        You have 180 days from the decision to ask for a review.
       </p>
+      ${callButton()}
     </div>`;
   }
 
@@ -165,10 +190,20 @@ function whatHappensNext(claims) {
       Paid claims are sent to you directly. Allow a few business days for the money to
       reach your account after the date shown on the claim.
     </p>
-    <p class="card__meta">
-      Anything not right? Call ${SERVICE_NUMBER} or send us a message from MyMailbox.
-    </p>
+    <p class="card__meta">Anything not right? Talk to us.</p>
+    ${callButton()}
   </div>`;
+}
+
+/* A real control, not a phone number buried in the dimmest paragraph on the
+   screen. Someone who has just been told their claim was denied needs the way
+   to reach a person to be the most obvious thing in front of them — this is the
+   single most common complaint in reviews of the competitor apps researched for
+   docs/01. Same tel: pattern as the ID card screen; the dialler is the OS's. */
+function callButton() {
+  return html`<a class="btn btn--secondary btn--block" href="tel:${SERVICE_NUMBER.replace(/-/g, '')}">
+    ${icons.phone()} Call ${SERVICE_NUMBER}
+  </a>`;
 }
 
 function claimRow(claim, policies) {
@@ -187,6 +222,14 @@ function claimRow(claim, policies) {
       <span class="card__meta" style="flex:1">${esc(s.summary)} · filed ${formatDate(claim.submittedAt)}</span>
       <span style="color:var(--color-text-secondary);flex:none">${icons.chevronRight()}</span>
     </div>
+    <!-- The amount is the single fact a member wants from a settled claim, and
+         the list card carried everything except it — the claim ID was set in the
+         largest type on the card while the money wasn't there at all (visual QA
+         finding). Only rendered once there is a real figure: an open claim has
+         no amount yet, and inventing a placeholder would be worse than silence. -->
+    ${claim.paidAmount
+      ? html`<span class="claim-amount">${formatMoney(claim.paidAmount)} paid to you</span>`
+      : ''}
   </button>`;
 }
 
