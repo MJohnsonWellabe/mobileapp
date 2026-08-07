@@ -767,3 +767,55 @@ itself: `login.js` is a standalone script outside the `_page.js` framework and n
 the login page regardless of whether login worked — fixed by setting the flag right after
 login's synchronous setup completes, since the form is interactive immediately with no
 async gate.
+
+## Home (and shared layout) redesign: a third, additive responsive tier
+
+Once the site was actually loading again, the human looked at a real Home screenshot and
+asked to use the screen's space better, make it "scale to any type of phone," read easier
+for a senior audience, and feel more engaging. This is a genuine, human-directed change to
+a rule docs/01 stated flatly — "single-column layouts throughout," content capped at
+560px, with no strategy for anything past "430–600px, large phone/small tablet" — not a
+bug fix, so it's logged as a design decision, not folded silently into the CSS.
+
+Confirmed before touching anything: nothing in the app's CSS changes layout above ~430px
+today. `.app-main` (the one shared container every screen uses) hard-caps at 560px with
+zero width-based `@media` rules anywhere in `components.css`/`screens.css` (the only
+precedent for a width breakpoint in the whole codebase is `admin.css`'s internal
+720px card/table switch, which is unrelated and untouched). Home's own "Your Wellabe"
+list (`.section-grid`) had no `grid-template-columns` at all, so it was a single implicit
+column at every width, and its bottom illustration was small (max-width 320px) and faded,
+leaving visible dead space beneath it on anything taller or wider than the minimum tested
+size.
+
+Asked the human to choose scope and direction rather than guessing: they chose the whole
+shared layout system (not just Home) and both wider-and-richer rather than picking one.
+Landed on a new, purely additive tier at `min-width: 640px` — the existing 375px and
+430–600px breakpoints are byte-for-byte unchanged, still single-column, still capped at
+560px:
+
+- `.app-main` widens to a new `--content-max-wide: 720px` token, globally, so every
+  screen gets more room with no per-page markup changes.
+- Home's `.section-grid` becomes two columns at this tier (the only "grid of nav cards"
+  pattern in the app — every other screen's list uses its own per-screen markup).
+- Home's greeting, streak ring, and illustration scale up so the extra width reads as
+  intentional rather than the same small elements floating in more empty margin.
+- Running text (`.field__hint`, `.empty__body`, paragraph copy inside `.card`) gets a
+  60ch cap at this tier specifically because docs/01's original 560px ceiling existed to
+  avoid uncomfortable line lengths — widening the container without this would have
+  silently reintroduced that problem on text-heavy screens.
+
+**Regression caught during the first screenshot pass, fixed before shipping:** going to
+two columns roughly halves each Home section card's width, and `.section-card__status`
+was `white-space: nowrap` with ellipsis truncation — tuned for a full-width single column,
+it started clipping real information ("Medicare Supplement …", "Contact details and
+ad…"). Hiding text behind an ellipsis is a worse outcome than a two-line card, especially
+for this audience, so the status line wraps to two lines instead of truncating at this
+tier. Re-shot and confirmed full text now shows for every member tested.
+
+Also fixed while in `docs/01`: the "five daily challenges" line in §Navigation pattern was
+stale — the shipped app has used one assigned challenge per day since the earlier
+redesign this session; the doc just never caught up.
+
+Screenshot QA (`scripts/screenshot.mjs`) now includes 640 and 768 in its default
+`BREAKPOINTS` alongside the existing 375/430, so this tier gets checked going forward
+without a manual `--widths` override.

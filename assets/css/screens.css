@@ -213,6 +213,56 @@
   gap: var(--space-3);
 }
 
+.illustration {
+  opacity: 0.35;
+  max-width: 320px;
+}
+
+/* Large phone / small tablet, portrait, 640px+ (docs/01 §Layout &
+   responsiveness). .app-main itself already widens at this breakpoint
+   (components.css); this scales Home's own hero elements to match rather
+   than leaving them small in the middle of a wider column, and turns the
+   "Your Wellabe" list into two columns since there's finally room for it.
+   Running text stays capped for line length even though the container grew. */
+@media (min-width: 640px) {
+  .home-greeting {
+    font-size: var(--text-3xl);
+  }
+  .today-card {
+    padding: var(--space-6);
+  }
+  .ring {
+    width: 96px;
+    height: 96px;
+  }
+  .ring__number {
+    font-size: var(--text-2xl);
+  }
+  .ring__unit {
+    font-size: var(--text-sm);
+  }
+  .section-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+  }
+  /* Each card is roughly half as wide once the grid goes two columns, which
+     truncates status lines that fit fine in one long column ("Medicare
+     Supplement …", "Contact details and ad…") — hidden text is a worse
+     outcome than a two-line card, especially for this member base. */
+  .section-grid .section-card__status {
+    white-space: normal;
+  }
+  .illustration {
+    max-width: 420px;
+    margin: 0 auto;
+  }
+  .field__hint,
+  .empty__body,
+  .card p {
+    max-width: 60ch;
+  }
+}
+
 /* =========================================================== "more" ======= */
 
 .more-list {

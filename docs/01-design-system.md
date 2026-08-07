@@ -92,7 +92,7 @@ against the table above, not assumed.
 
 - Two required breakpoints: **375px** (standard phone) and **430–600px** (large phone /
   small tablet, portrait). Both are hard acceptance criteria on every screen.
-- Single-column layouts throughout. No multi-column forms.
+- Single-column layouts throughout at these two sizes. No multi-column forms.
 - **Minimum touch target: 48×48px**, with at least 8px of visible spacing between adjacent
   targets. This is above WCAG 2.2's 24×24 AA floor and above the common 44×44 figure, and
   matches Material's 48dp. It is a deliberate choice for a member base with a meaningful
@@ -103,8 +103,16 @@ against the table above, not assumed.
   ```css
   padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 16px);
   ```
-- Content max-width of 560px, centered, so the large breakpoint doesn't produce
-  uncomfortably long line lengths.
+- Content max-width of 560px, centered, at the two breakpoints above, so they don't
+  produce uncomfortably long line lengths.
+- **A third, additive tier at 640px+** (large phone / small tablet where there's
+  genuinely extra room to use, not just extra margin): the shared container widens to
+  720px app-wide, running text stays capped at 60ch so it doesn't get harder to read
+  just because the screen got wider, and card-grid lists (currently just Home's "Your
+  Wellabe" section) become two columns instead of one long column. Home additionally
+  scales up its greeting, streak ring, and illustration so the extra width reads as
+  "designed for this size," not "a phone layout with bigger margins." This tier is
+  additive — it never changes what the two required breakpoints above look like.
 - **Never set `user-scalable=no`.** Pinch-zoom must work everywhere, especially on the ID
   card and the document viewer.
 
@@ -135,10 +143,12 @@ full-width band, minimum 64px tall, with a leading icon, a 17px label, a one-lin
 status ("12-day streak", "1,240 points", "Find a dentist near you"), and a chevron.
 
 **The home dashboard remains the primary map.** All eight section cards live on Home, each
-carrying a live status line. Home also carries a **"Today" card pinned at the top** with the
-five daily challenges as inline tappable checkboxes plus the streak ring — completing the
-daily habit takes zero navigation, which is what makes the "opens the app multiple times a
-week" goal in `docs/00-product-brief.md` realistic.
+carrying a live status line. Home also carries a **"Today" card pinned at the top** with
+the one challenge assigned for that day as an inline tappable checkbox plus the streak
+ring — completing the daily habit takes zero navigation, which is what makes the "opens
+the app multiple times a week" goal in `docs/00-product-brief.md` realistic. (One assigned
+challenge per day, not a choice of five — see `docs/03`/`docs/05` and
+`DECISIONS-LOG.md`.)
 
 **Top app bar — three elements maximum, and never more:**
 

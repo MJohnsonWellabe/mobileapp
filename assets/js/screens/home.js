@@ -169,7 +169,7 @@ function render(state) {
       </div>
     </div>
 
-    <div class="illustration" style="opacity:.35;max-width:320px" aria-hidden="true">
+    <div class="illustration" aria-hidden="true">
       ${illustration('family-couch')}
     </div>
   `;

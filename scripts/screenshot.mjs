@@ -23,8 +23,11 @@ import { listen } from './serve.mjs';
 const CHROMIUM = '/opt/pw-browsers/chromium';
 const OUT_DIR = 'scripts/output';
 
-/** docs/01: a standard phone and a large phone / small tablet in portrait. */
-export const BREAKPOINTS = [375, 430];
+/** docs/01: a standard phone, a large phone / small tablet in portrait, and the
+ *  640px+ wide tier (large phone / small tablet where the shared container and
+ *  Home's hero elements widen — see components.css/screens.css). 768 checks the
+ *  wide tier holds up well past its 640px trigger, not just right at it. */
+export const BREAKPOINTS = [375, 430, 640, 768];
 
 /** Screen registry. `path` is relative to the repo root; `needs` is the seeded
  *  member state that makes the screen interesting, used by --all. */

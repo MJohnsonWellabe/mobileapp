@@ -87,6 +87,16 @@ a {
   padding-bottom: calc(env(safe-area-inset-bottom) + var(--space-8));
 }
 
+/* Large phone / small tablet, portrait, 640px+ (docs/01 §Layout & responsiveness).
+   Every screen gets more room automatically — no per-page markup change needed.
+   .toast intentionally stays at --content-max: it's a transient message, not
+   primary content, and doesn't need the extra width. */
+@media (min-width: 640px) {
+  .app-main {
+    max-width: var(--content-max-wide);
+  }
+}
+
 .stack > * + * {
   margin-top: var(--space-4);
 }

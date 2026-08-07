@@ -97,6 +97,12 @@
   --tap-target-min: 48px; /* above WCAG 2.2 AA and above the common 44px */
   --tap-target-spacing: 8px;
   --content-max: 560px;
+  /* Large phone / small tablet, portrait, 640px and up (docs/01 §Layout &
+     responsiveness). The trigger width itself has to be a raw number in each
+     @media rule — custom properties can't be read inside a media condition —
+     so 640px is the one number every "wide" rule in components.css/screens.css
+     must match. */
+  --content-max-wide: 720px;
 
   --focus-ring: 0 0 0 3px #ffffff, 0 0 0 5px var(--color-primary);
 }
