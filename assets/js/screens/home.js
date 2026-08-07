@@ -16,8 +16,10 @@ import {
   subscribeNotices,
 } from '../data.js';
 import {
+  amountDue,
   coverageStatus,
   formatDate,
+  formatMoney,
   formatPoints,
   toYmd,
   startOfToday,
@@ -179,8 +181,20 @@ function render(state) {
 /** The derived "needs your attention" group, shown at the top of Home as well as in
  *  MyMailbox. Never stored — see notices.js. */
 function attentionCard(items) {
+  // "Needs your attention" has to mean "something is wrong." An unlocked
+  // reward arriving under that header taught members to brace for a problem
+  // and then handed them a cross-sell — the fastest way to make a senior
+  // audience stop trusting the header entirely (visual QA finding). Good news
+  // gets its own heading; the accent tone is the app's existing marker for it.
+  const good = items.filter((i) => i.tone === 'accent');
+  const bad = items.filter((i) => i.tone !== 'accent');
+  return html`${bad.length ? attentionGroup('Needs your attention', bad) : ''}
+  ${good.length ? attentionGroup('Good news', good) : ''}`;
+}
+
+function attentionGroup(heading, items) {
   return html`<div class="stack-sm">
-    <h2 class="section-heading">Needs your attention</h2>
+    <h2 class="section-heading">${esc(heading)}</h2>
     ${items.map(
       (item) => html`<div class="card stack-sm">
         <div class="notice-banner notice-banner--${item.tone === 'accent' ? 'info' : item.tone}">
@@ -343,7 +357,17 @@ function paymentsCardProps(policies, today) {
     a.paidThroughDate.localeCompare(b.paidThroughDate),
   )[0];
   const status = coverageStatus(soonest, today);
-  if (status.key !== 'active') return { status: 'Past due', statusTone: 'warning' };
+  if (status.key !== 'active') {
+    // The amount matters most on the one card that has a problem — an earlier
+    // pass shipped the pill alone here, which left the member with something
+    // wrong seeing LESS information than the members with nothing wrong
+    // (visual QA finding).
+    return {
+      status: 'Past due',
+      statusTone: 'warning',
+      statusPrefix: formatMoney(amountDue(soonest, today).amount),
+    };
+  }
   // Non-breaking spaces so the date never splits mid-date on a narrow card
   // column ("September 3," on one line, "2026" orphaned on the next).
   return { status: `Paid through ${formatDate(soonest.paidThroughDate).replace(/ /g, ' ')}` };

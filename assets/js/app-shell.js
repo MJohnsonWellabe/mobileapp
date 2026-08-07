@@ -145,6 +145,15 @@ export function watchMailboxBadge(userId) {
   return stopNotices;
 }
 
+/** Retitle the top bar for a sub-view that is a destination in its own right
+ *  (the ID card, reached directly from Home) rather than a detail pane of the
+ *  screen whose name the bar already carries. No-ops on screens with no title
+ *  element, e.g. Home. */
+export function setTitle(title) {
+  const el = document.querySelector('.topbar__title');
+  if (el) el.textContent = title;
+}
+
 /** Registered by _page.js. Returns true when it consumed the Back press. */
 let backHandler = null;
 export function setBackHandler(fn) {

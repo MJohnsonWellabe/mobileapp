@@ -627,7 +627,11 @@ a.data-row:active {
   font: inherit;
   font-size: var(--text-base);
   color: var(--color-text-primary);
-  background: var(--color-surface);
+  /* Sunken, not surface: a field has to read as a well you can type into,
+     distinct from the card behind it. On white that difference is subtle and
+     the border did the work; in dark mode a surface-coloured field inside a
+     surface-coloured card vanished entirely (visual QA finding). */
+  background: var(--color-surface-sunken);
   border: 1px solid var(--color-border-strong);
   border-radius: var(--radius-md);
 }

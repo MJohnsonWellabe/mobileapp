@@ -363,10 +363,32 @@
 /* One of the two artifacts most likely to be pinch-zoomed in the demo, so it is
    drawn as a real card rather than a data table (docs/04 §MyCoverages). Yellow on
    the top band is legal here because it carries only ink-coloured text. */
+/* The card face is pinned to light in BOTH themes, the same way .doc is, and
+   for the same reason: this is a facsimile of a physical object a member holds
+   up at a clinic desk, not an app surface that happens to be card-shaped. Part
+   6 originally themed it normally on the argument that it sits among other
+   themed cards in MyCoverages — that was wrong in practice. In dark the body
+   went near-black and the "Member services" band went mid-grey, so the card's
+   three-band structure (yellow header / white body / dark footer) collapsed to
+   two and it stopped reading as a card at all (visual QA finding). Re-pinning
+   the tokens here re-pins the whole subtree, since every descendant already
+   resolves colour through var(--color-*).
+
+   --shadow-raised is deliberately NOT pinned: letting the card keep the dark
+   theme's heavier shadow is what makes a light card float convincingly over a
+   dark page. Same call as .doc. */
 .idcard {
+  --color-surface: #ffffff;
+  --color-text-primary: #14181b;
+  --color-text-secondary: #55606b;
+  --color-border: #e2ddd7;
+  --color-ink: #14181b;
+  --color-text-on-dark: #ffffff;
+
   border-radius: var(--radius-lg);
   overflow: hidden;
   background: var(--color-surface);
+  color: var(--color-text-primary);
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-raised);
 }
@@ -504,6 +526,11 @@
    one tap away, so this only has to answer "roughly how far along is this."
    aria-label on the container carries the same fact for screen readers, since
    the segments themselves are decorative. */
+.stagebar-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
 .stagebar {
   display: flex;
   gap: var(--space-1);
@@ -516,6 +543,19 @@
 }
 .stagebar__seg.is-done {
   background: var(--color-primary);
+}
+/* The bar's tone has to agree with the pill directly above it — a teal bar
+   under a green "Paid" pill or a filled bar under a red "Denied" pill reads
+   as two different answers to the same question. */
+.stagebar--done .stagebar__seg.is-done {
+  background: var(--color-success);
+}
+.stagebar--denied .stagebar__seg.is-done {
+  background: var(--color-danger);
+}
+.stagebar__caption {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
 }
 
 .tracker {
@@ -626,29 +666,33 @@
   color: var(--color-text-secondary);
   cursor: pointer;
 }
+/* The raised pill relies on surface-vs-sunken lightness to read as selected.
+   That gap is wide in light mode (white on warm grey) and narrow in dark, so
+   the selected tab was signalled by text hue alone there — colour-only, which
+   docs/01 principle 2 rules out (visual QA finding). The border restores a
+   shape signal that survives either theme. */
 .segmented__item[aria-selected='true'] {
   background: var(--color-surface);
   color: var(--color-primary);
   font-weight: var(--weight-bold);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-card), inset 0 0 0 1px var(--color-primary);
 }
 
+/* Wraps rather than scrolls.
+   Three attempts at making a horizontal scroll strip read as scrollable all
+   failed review: a colour-matched gradient was invisible, an inset shadow was
+   invisible on dark chrome, and a light inset shadow left the last chip
+   sliced mid-glyph with the native scrollbar thumb parked on top of it. The
+   underlying problem is that a horizontal scroll affordance is genuinely hard
+   to signal, and this audience is the least likely to discover a swipe.
+   Wrapping to a second row removes the problem instead of signalling it —
+   there is vertical room on both screens that use this, and every chip is
+   then whole, reachable, and visible without a gesture. */
 .chips {
   display: flex;
+  flex-wrap: wrap;
   gap: var(--space-2);
-  overflow-x: auto;
   padding: 0 0 var(--space-1);
-  -webkit-overflow-scrolling: touch;
-  /* A hard overflow-x clip with no cue reads as a broken layout rather than a
-     scrollable strip (visual QA finding). An inset box-shadow reads reliably
-     regardless of what's underneath it — a color-matched gradient overlay
-     (tried first) was invisible in practice: fading dark text to white on an
-     already-white chip background produces no perceptible change at all. */
-  box-shadow: var(--shadow-scroll-cue);
-  /* The inset cue sits at the strip's right edge, so the last chip needs room
-     to clear it — without this it renders under the shadow and reads as
-     clipped rather than as "scroll for more" (visual QA finding). */
-  padding-right: var(--space-5);
 }
 .chip {
   flex: none;
@@ -975,6 +1019,16 @@
 .card--accent-solid .card__meta,
 .card--accent-solid .disclosure {
   color: var(--color-on-brand-yellow);
+}
+/* The yellow panel doesn't change between themes, so nothing sitting on it
+   should either. --color-primary brightens to a light cyan in dark mode for
+   contrast against dark surfaces — on this permanently-yellow one it became a
+   near-luminance match and the meter fill disappeared (visual QA finding). */
+.card--accent-solid .meter {
+  background: rgba(20, 24, 27, 0.18);
+}
+.card--accent-solid .meter__fill {
+  background: var(--color-on-brand-yellow);
 }
 
 /* Plain text, not a disabled button — a disabled .btn at 45% opacity measured

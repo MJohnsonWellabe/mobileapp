@@ -15,6 +15,7 @@ import {
 } from '../format.js';
 import { html, esc, dataRow, button, toast, on, illustration } from '../ui.js';
 import { icons, wellabeMark } from '../icons.js';
+import { setTitle } from '../app-shell.js';
 
 const SERVICE_NUMBER = '1-800-555-0199';
 
@@ -140,8 +141,19 @@ page({
 
     if (mode === 'card') {
       const policy = policies.find((p) => p.id === ctx.view.openPolicy);
-      return policy ? idCardView(policy, user) : listView(policies, user, health, today);
+      // Name the screen you're standing on. The shared top bar says
+      // "MyCoverages" for every sub-view of this screen, which is fine for a
+      // detail pane but wrong for the ID card — that's a destination in its
+      // own right, and the one members are most likely to arrive at directly
+      // from Home (visual QA finding).
+      if (policy) {
+        setTitle('Member ID card');
+        return idCardView(policy, user, policies);
+      }
+      setTitle('MyCoverages');
+      return listView(policies, user, health, today);
     }
+    setTitle('MyCoverages');
     if (mode === 'agent') return agentView();
     if (mode === 'add') return addPicker(policies, health);
     if (mode === 'enroll') return enrollForm(ctx.view.product, user, health);
@@ -226,7 +238,15 @@ function policyCard(policy, today) {
         >`
       : ''}
     <div style="display:flex;gap:var(--space-2);flex-wrap:wrap">
-      <button class="btn btn--primary" data-view="card" data-policy="${esc(policy.id)}">
+      <!-- Secondary when the policy needs paying: "restore this coverage"
+           directly above is the one action that matters on a lapsed card, and
+           two filled primaries stacked gave a navigation shortcut equal weight
+           with it (visual QA finding). One primary per card state. -->
+      <button
+        class="btn btn--${status.key === 'active' ? 'primary' : 'secondary'}"
+        data-view="card"
+        data-policy="${esc(policy.id)}"
+      >
         View ID card
       </button>
       <button class="btn btn--secondary" data-view="detail" data-policy="${esc(policy.id)}">
@@ -272,6 +292,12 @@ function idCardView(policy, user) {
     <p class="disclosure" style="text-align:center">
       Show this card at your provider. You can also keep a screenshot on your phone.
     </p>
+    <!-- The likeliest thing anyone wants from an ID card screen is to call the
+         number printed on it. A tel: link is the real thing, not a fake
+         integration — the phone dialler is the OS's, not ours. -->
+    <a class="btn btn--secondary btn--block" href="tel:${SERVICE_NUMBER.replace(/-/g, '')}">
+      ${icons.phone()} Call member services
+    </a>
   `;
 }
 

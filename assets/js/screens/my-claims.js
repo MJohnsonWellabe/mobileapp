@@ -120,7 +120,7 @@ function claimRow(claim, policies) {
       </div>
       <span class="pill pill--${s.tone}">${icons[s.icon]()}${esc(s.label)}</span>
     </div>
-    ${claim.status === 'Denied' ? '' : stageBar(claim)}
+    ${stageBar(claim)}
     <div style="display:flex;align-items:center;gap:var(--space-2)">
       <span class="card__meta" style="flex:1">${esc(s.summary)} · filed ${formatDate(claim.submittedAt)}</span>
       <span style="color:var(--color-text-secondary);flex:none">${icons.chevronRight()}</span>
@@ -136,23 +136,34 @@ function claimRow(claim, policies) {
  *  index math as tracker(), deliberately reading from the shared STAGES
  *  constant rather than restating it, so the two can never disagree.
  *
- *  Denied claims skip this: they left the pipeline rather than finishing it,
- *  and drawing a progress bar under a denial reads as progress toward
- *  something. The danger pill and the detail view carry that state instead. */
+ *  Denied claims fill every segment in the danger tone rather than being
+ *  skipped: a denial IS a finished claim, and leaving the one state a member
+ *  most needs to understand as the only card in the list with no indicator
+ *  read as a component that had failed to render (visual QA finding). Paid
+ *  fills in the success tone so the bar can't contradict the pill above it.
+ *
+ *  The caption is not decoration — an unlabelled bar communicates by fill
+ *  position alone, which is exactly the "never colour/shape alone" case
+ *  docs/01 principle 2 rules out. */
 function stageBar(claim) {
-  const index = STAGES.indexOf(claim.status);
-  return html`<div
-    class="stagebar"
-    role="img"
-    aria-label="Stage ${index + 1} of ${STAGES.length}: ${esc(claim.status)}"
-  >
-    ${STAGES.map(
-      (stage, i) =>
-        html`<span
-          class="stagebar__seg ${i <= index ? 'is-done' : ''}"
-          title="${esc(stage)}"
-        ></span>`,
-    )}
+  const denied = claim.status === 'Denied';
+  const index = denied ? STAGES.length - 1 : STAGES.indexOf(claim.status);
+  const toneClass = denied ? 'stagebar--denied' : claim.status === 'Paid' ? 'stagebar--done' : '';
+  const caption = denied
+    ? 'Closed — not approved'
+    : `Step ${index + 1} of ${STAGES.length} · ${claim.status}`;
+
+  return html`<div class="stagebar-wrap">
+    <div class="stagebar ${toneClass}" aria-hidden="true">
+      ${STAGES.map(
+        (stage, i) =>
+          html`<span
+            class="stagebar__seg ${i <= index ? 'is-done' : ''}"
+            title="${esc(stage)}"
+          ></span>`,
+      )}
+    </div>
+    <span class="stagebar__caption">${esc(caption)}</span>
   </div>`;
 }
 
@@ -422,7 +433,10 @@ function statusPill(status) {
     Processing: { label: 'Processing', tone: 'info', icon: 'clock', summary: 'Being worked on' },
     Reviewing: { label: 'Reviewing', tone: 'info', icon: 'clock', summary: 'Last stage before a decision' },
     Paid: { label: 'Paid', tone: 'success', icon: 'checkCircle', summary: 'Resolved and paid' },
-    Denied: { label: 'Denied', tone: 'danger', icon: 'alert', summary: "Tap to see why, and what you can do" },
+    // Not "Tap to see why" — the whole row is already tappable, and the
+    // instruction crowded out the one thing every sibling card puts here: what
+    // state the claim is actually in.
+    Denied: { label: 'Denied', tone: 'danger', icon: 'alert', summary: 'Not approved — see why' },
   }[status];
 }
 

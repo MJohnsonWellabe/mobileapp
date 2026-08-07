@@ -51,24 +51,22 @@
   cursor: pointer;
 }
 
+/* Wraps rather than scrolls, same call as .chips (screens.css) and for the
+   same reason: three attempts at signalling a horizontal scroll here all
+   failed review — a dark inset shadow was invisible on dark chrome, a light
+   one read as a bright smear over the clipped label, and a mask would fade
+   the strip's own background out along with it. Seven tabs will never fit a
+   375px phone, so the honest fix is to show all seven on two rows instead of
+   hiding three behind a gesture nobody can see. This is a dense internal
+   console; two rows of chrome costs it nothing. */
 .admin-tabs {
   position: sticky;
   top: 56px;
   z-index: 19;
   display: flex;
+  flex-wrap: wrap;
   gap: 0;
-  overflow-x: auto;
-  /* Room for the last tab to clear the scroll cue below, so it reads as
-     "there's more this way" rather than as a clipped label. */
-  padding-right: var(--space-6);
   background: var(--color-chrome-2);
-  /* A LIGHT edge, not the dark one this used to carry. Same reasoning as
-     .chips (screens.css) — the cue has to contrast with what's under it — but
-     this strip's chrome is dark in both themes, so a black inset shadow on it
-     was very nearly invisible and the strip still read as clipped mid-word at
-     375px (visual QA finding, twice). Seven tabs will always overflow a phone
-     width; the strip just has to say so. */
-  box-shadow: inset -24px 0 14px -14px rgba(255, 255, 255, 0.5);
 }
 .admin-tab {
   flex: none;

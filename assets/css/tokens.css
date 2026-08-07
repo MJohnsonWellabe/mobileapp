@@ -193,6 +193,10 @@
     --color-tier-silver-tint: #20262b;
 
     --color-surface: #1a2024;
+    /* Also the fill for text inputs. Kept clearly darker than --color-surface
+       so a field reads as a recessed, tappable well against the card it sits
+       on — at a near-match the login fields were separated from their card by
+       a hairline alone and effectively disappeared (visual QA finding). */
     --color-surface-sunken: #0b0f12;
     --color-background: #101417;
     --color-text-primary: #f2f4f5;
