@@ -1194,3 +1194,40 @@ stating plainly why 17px failed), the 48px → 56px touch target, and a new rule
 had never contained at all — nothing in it said anything about vertical fill or viewport
 height, which is precisely why `.app-main` never had a `min-height`. Also fixed a stale
 line claiming the 720px container is "app-wide" when Part 7 deliberately made it opt-in.
+
+### What the first true-size round actually caught
+
+Shooting at `deviceScaleFactor: 1` immediately turned up defects four prior rounds had
+looked straight past. Both reviewers independently confirmed the new scale reads correctly
+and is not overshot, and then flagged a set of things that were only latent bugs at 17px:
+
+- **`.data-row__label` was `flex: none`.** Harmless while labels were short and text was
+  small; at 21px an unshrinkable label pushed the value clean off the right edge, so a
+  payment-history row rendered `$148` for $148.50 with the "Paid" pill sliced in half. Both
+  columns now shrink. The rule this encodes: a *value* must never be the thing that gets
+  cut, because the value is the information.
+- **`.challenge__detail` inherited a token that flips for dark mode**, while the cream
+  `.today-card` it sits on deliberately does not. Result: near-white text on cream, on a
+  card that appears on every member's Home. Pinned to a literal, with a comment saying why
+  a literal is correct here — this is the second time this exact class of bug has appeared
+  (the ID card was the first), and the pattern is always the same: a component pinned to
+  one theme, containing a descendant still resolving a theme-flipping token.
+- **Dark-mode status-pill tints** were only a few percent lighter than the card behind
+  them, so a pill read as loose coloured text rather than a badge. A pill has to look like
+  a surface in both themes.
+- **Empty states still didn't fill the phone** even after `.app-main` got its `min-height`,
+  because the empty block ended where its content ended and left ~200px of nothing above
+  the tab bar. `.illustration { margin-top: auto }` doesn't help — an empty state's art is
+  at the *top* of the block, not after it. `.empty` now grows into the spare room and
+  centres in it, which also pushes the primary action down into comfortable thumb reach.
+- **The admin console's seven tabs wrapped onto three rows**, spending 168px of an 844px
+  phone on navigation before any member data appeared. Tighter horizontal padding lands
+  them in two rows without shrinking labels or breaking the tap-target floor.
+- **MyRewards' tier caveat ran to five lines** on the yellow hero and pushed the rewards
+  store entirely below the fold — the disclaimer was taking more of the first screenful
+  than the thing members came to the screen to do. Cut to one line that still draws the
+  only distinction that matters (redeeming spends the balance, not the tier).
+
+The general lesson worth keeping: a type-scale change is not a cosmetic change. Every
+`flex: none`, every fixed height, every `nowrap`, and every "it fits" assumption in the
+stylesheet is an untested claim that only holds at the old size.

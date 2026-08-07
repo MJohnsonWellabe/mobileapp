@@ -205,10 +205,14 @@ function balanceCard(account) {
         : html`<span class="card__meta">You're at the top tier.</span>`}
     </div>
     <div class="meter"><span class="meter__fill" style="width:${(pct * 100).toFixed(0)}%"></span></div>
+    <!-- Deliberately one line. The three-sentence version this replaced ran to
+         five lines at the large-print scale and pushed the rewards store itself
+         entirely below the fold — the caveat was taking more of the first
+         screenful than the thing members came here to do. It still draws the one
+         distinction that matters: redeeming spends the balance, not the tier. -->
     <p class="disclosure">
-      Your tier is based on lifetime points earned (${formatPoints(lifetime)} so far), and it
-      never goes down. Your spendable balance above is different — that's the one redeeming
-      an item lowers.
+      ${formatPoints(lifetime)} lifetime points earned. Redeeming spends the balance above,
+      never your tier.
     </p>
   </div>`;
 }
