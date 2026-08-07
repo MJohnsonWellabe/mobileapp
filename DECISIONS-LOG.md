@@ -705,3 +705,30 @@ service-account key (Part 1 of this session) has done its job — the real proje
 seeded and verified end-to-end via `--admin --verify`. Safe to revoke it from the GCP
 console now (Keys tab → trash icon); regenerating a fresh one costs nothing next time it's
 needed.
+
+## Post-merge: a blank page with no way to see why
+
+After merging to `main`, the human reported every page past login rendering completely
+blank on the deployed site — on a phone, with no devtools access to read a console. Every
+static/API-level check available from this environment came back clean: the deploy
+succeeded (`pages build and deployment` and `Deploy Firebase rules` both green for the
+merged commit), `index.html` and all 9 page HTML files and the vendored Firebase bundle are
+present and intact on `main`, every JS file touched this session passes a syntax check, and
+unauthenticated REST calls that replicate exactly what the browser does for login and every
+subscription-based screen (`policies`, `notices`, `healthDailyLog`, `claims`, `payments`,
+`documents`, `messageThreads`) all return `200` with correct data against the real project.
+None of that rules out a real-SDK-specific failure this environment structurally cannot
+reproduce — Chromium here cannot reach Firestore at all (`scripts/seed-node.mjs`'s own
+header explains why), and this environment's network policy blocks `github.io` outright, so
+the live site can't be loaded or fetched from here to see the actual failure directly.
+
+**Added `assets/js/fatal-guard.js`, loaded as a plain (non-module) script before every
+page's module script.** It listens for `error` and `unhandledrejection` on `window`, and
+falls back to an 8-second "taking longer than expected" timeout if `document.body.dataset
+.ready` never flips, replacing a silent blank screen with a plain-language message and a
+"Try again" button. This doesn't fix whatever the underlying issue turns out to be — it
+exists so a failure is *legible* to whoever hits it, devtools or not, which a live demo in
+front of an ELT audience needs regardless of what today's specific bug is. Loaded as a
+classic script rather than a module deliberately: a module import failure can prevent the
+whole module graph from executing, but a plain script tag that already ran and attached its
+listeners keeps working even if everything after it fails to load.
