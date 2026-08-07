@@ -26,9 +26,22 @@
       '</div>';
   }
 
-  window.addEventListener('error', function (e) {
-    showFatal(e.message || (e.error && e.error.message) || 'A script failed to run.');
-  });
+  // capture: true — a failed <script>/<link>/<img> load is a resource error that
+  // does not bubble, so without capture this only ever catches in-script runtime
+  // errors and a bad module import (e.g. a 404) falls through silently to the
+  // generic 8s timeout instead of naming the actual failure.
+  window.addEventListener(
+    'error',
+    function (e) {
+      if (e.target && e.target !== window && e.target.tagName) {
+        var src = e.target.src || e.target.href;
+        showFatal('Failed to load ' + (src || e.target.tagName.toLowerCase()) + '.');
+        return;
+      }
+      showFatal(e.message || (e.error && e.error.message) || 'A script failed to run.');
+    },
+    true,
+  );
   window.addEventListener('unhandledrejection', function (e) {
     var reason = e.reason;
     showFatal((reason && (reason.message || String(reason))) || 'A request failed.');

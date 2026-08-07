@@ -732,3 +732,38 @@ front of an ELT audience needs regardless of what today's specific bug is. Loade
 classic script rather than a module deliberately: a module import failure can prevent the
 whole module graph from executing, but a plain script tag that already ran and attached its
 listeners keeps working even if everything after it fails to load.
+
+## Root cause found: GitHub Pages Jekyll was silently dropping `_page.js`
+
+The blank-page bug above had a real, fully-explainable cause. The human's follow-up report
+narrowed it precisely: after logging in, Home worked fine, but every other screen was
+blank. `assets/js/screens/home.js` is the one screen module in the whole app that does not
+import `assets/js/screens/_page.js` — every other section screen (`my-mailbox.js`,
+`my-payments.js`, `my-claims.js`, `my-coverages.js`, `my-health.js`, `my-care.js`,
+`my-rewards.js`, `my-information.js`, `more.js`) does. That split is the whole bug.
+
+GitHub Pages runs the published branch through Jekyll by default, and Jekyll's default
+behavior is to exclude any file or directory starting with an underscore from the build
+output (the same rule that hides `_layouts`/`_includes`/`_sass` in an ordinary Jekyll
+site) — the standard fix is a `.nojekyll` file at the repo root, which this repo never had.
+So `_page.js` was never published at all; every screen importing it got a 404 on that
+module, which fails the whole ES module graph for that page before any synchronous DOM
+work runs (no topbar, no skeleton — a truly blank page, not even a fatal-guard message).
+And because a failed `<script>` load is a non-bubbling resource-error event,
+`fatal-guard.js`'s `window.addEventListener('error', ...)` (bubble phase, no `capture`)
+never saw it either — it would only ever have caught this via its generic 8-second
+timeout, never with a specific message. None of the checks logged above caught this
+because they were all either static file/API checks (the file is present and correct in
+the git tree — Jekyll strips it only during GitHub's *publish* step, not from the repo
+itself) or local/emulator testing, which never runs the published output through Jekyll at
+all. Fixed by adding an empty `.nojekyll` file at the repo root (zero code changes needed)
+and confirming no other underscore-prefixed paths exist in the tree. Also hardened
+`fatal-guard.js` to listen with `capture: true`, so a future failed resource load names
+itself immediately instead of falling through to the generic timeout.
+
+Separately, while chasing this, found and fixed a real false-positive in `fatal-guard.js`
+itself: `login.js` is a standalone script outside the `_page.js` framework and never set
+`document.body.dataset.ready`, so the guard's 8-second timeout was guaranteed to fire on
+the login page regardless of whether login worked — fixed by setting the flag right after
+login's synchronous setup completes, since the form is interactive immediately with no
+async gate.

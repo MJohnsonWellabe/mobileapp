@@ -9,6 +9,10 @@ if (existing) location.replace(existing.role === 'admin' ? 'admin.html' : 'home.
 
 document.getElementById('mark').innerHTML = wellabeMark();
 
+// Same convention _page.js uses to signal first render — the login form is
+// synchronously interactive with no async data gate, so it's ready immediately.
+document.body.dataset.ready = '1';
+
 preloadIllustrations(['phone-and-coffee']).then(() => {
   document.getElementById('art').innerHTML = illustration('phone-and-coffee');
 });
