@@ -13,6 +13,12 @@
      constant and never flips in dark mode — --color-on-brand-yellow doesn't
      either, since text on solid yellow needs a fixed ink regardless of theme. */
   --color-brand-yellow: #edc319;
+  /* Does NOT flip in dark mode, same as --color-brand-yellow itself. A
+     darkened tint rendered as a muddy olive-brown sitting between two bright
+     yellow panels on the same scroll, which read as a rendering error rather
+     than a surface (visual QA finding). The rule is simply: brand-yellow
+     surfaces are light surfaces, in both themes — so anything drawn on one
+     uses --color-on-brand-yellow for its ink. */
   --color-brand-yellow-tint: #fdf6dc;
   --color-brand-teal: #15a5bb; /* 2.58:1 in light — decorative fills only, never a control */
   --color-on-brand-yellow: #14181b;
@@ -170,7 +176,6 @@
    than as a rule ("always white on primary") that only holds in light mode. */
 @media screen {
   :root[data-theme='dark'] {
-    --color-brand-yellow-tint: #4a3a14;
 
     --color-primary: #4cc6d8;
     --color-primary-pressed: #34a8ba;

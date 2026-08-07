@@ -315,14 +315,13 @@ function coverageLine(policies, today) {
 
 /** sectionCard() props for MyCoverages.
  *
- *  A healthy state is one plain line ("Medicare Supplement · Active"); a state
- *  the member has to act on returns a tone as well, so the status word renders
- *  as the same icon+colour pill MyCoverages itself uses. Home used to show
- *  "Lapsed" in the identical grey as "Active", which made the one card that
- *  needed attention indistinguishable from the seven that didn't.
- *
- *  The non-breaking space before the middot keeps the status word from wrapping
- *  onto its own line in a narrow grid column. */
+ *  The status word is always a pill — green for Active, amber for past due,
+ *  red for lapsed — rather than plain text with a middot separator. Two
+ *  reasons: Home used to render "Lapsed" in the identical grey as "Active",
+ *  so the one card that needed attention looked like the seven that didn't;
+ *  and the middot form wrapped badly in a narrow grid column, orphaning
+ *  "· Active" onto its own line behind a leading dot that read as a typo.
+ *  A pill can't do either. */
 function coverageCardProps(policies, today) {
   if (!policies.length) return { status: 'Nothing on file yet' };
   const single = policies.length === 1;
@@ -333,11 +332,11 @@ function coverageCardProps(policies, today) {
     ? PRODUCT_LABELS[policies[0].product]
     : plural(policies.length, 'policy', 'policies');
 
-  if (worst.key === 'active') return { status: `${prefix} · ${worst.label}` };
   return {
     status: worst.label,
     statusPrefix: prefix,
-    statusTone: worst.key === 'lapsed' ? 'danger' : 'warning',
+    statusTone:
+      worst.key === 'active' ? 'success' : worst.key === 'lapsed' ? 'danger' : 'warning',
   };
 }
 

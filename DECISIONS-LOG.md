@@ -1048,3 +1048,71 @@ re-verified by screenshot. What's left is real, sourced from genuine competitive
 and worth a dedicated next pass — but it's a different kind of work than this session's
 "make it look and feel better" mandate, and shouldn't be rushed into the tail end of an
 already-long session.
+
+## Part 7: the deferred items, and four rounds of review
+
+Picked up the five items Part 6 logged as deliberately deferred, then ran the review loop
+to convergence. Two reviewers × four rounds against 144 screenshots (every screen ×
+representative members × light/dark × 375/640).
+
+**The ID card is now the headline object on Home**, not a text link inside the
+MyCoverages tile. It renders a real card face — yellow band, wellabe mark, product type,
+member name, policy number — spanning the full grid width, and taps through to the full
+card. This was the "if only one thing gets fixed" recommendation from both reviewers
+independently, sourced from the competitive research: the digital ID card is the single
+most-praised feature across every insurer app looked at, specifically because those apps
+surface it as something you *see*. It also let `.section-card--split` be deleted outright
+— that component had caused two separate CSS bugs in as many rounds (a stretched card, a
+truncated divider), and removing it is a net simplification, not just a feature swap.
+
+**Everything else deferred from Part 6 also landed:** a condensed four-segment stage bar
+on MyClaims list rows (reading from the same `STAGES` constant the full tracker uses, so
+they can't disagree); status pills instead of grey text for bad states on Home; MyCare
+chips given a real tappable treatment; the admin tab strip no longer clipping.
+
+**The most instructive bug of the whole session** was the ID card in dark mode. Part 6
+explicitly decided *not* to exempt `.idcard` from theming, reasoning it was "an app
+surface, not a piece of mail." That was wrong, and the review caught it: in dark mode the
+card's three-band structure (yellow header / white body / dark footer) collapsed to two
+and it stopped reading as a card at all. The correct rule turned out to be the one already
+applied to `.doc` — a facsimile of a physical object doesn't theme. Fixing it then
+produced a *second*, worse bug: `.idcard--preview { color: inherit }` beat the pinned
+`--color-text-primary` by source order, so the member's name and policy number inherited
+the page's near-white text straight onto the now-white card face and vanished. Both
+reviewers independently flagged that one as the single most important thing to fix. Worth
+recording as a pattern: pinning tokens on a component only works if nothing inside it
+re-opens the inheritance chain.
+
+**Three attempts at a horizontal-scroll cue all failed, so the pattern was abandoned.** A
+colour-matched gradient was invisible; a dark inset shadow was invisible on dark chrome; a
+light inset shadow read as a bright smear over a mid-word clip. Both the MyCare chip strip
+and the admin tab strip now **wrap** instead. The underlying lesson is that a horizontal
+scroll affordance is genuinely hard to signal and this audience is the least likely to
+discover a swipe — removing the need for the cue beat four rounds of trying to draw one.
+
+**Also fixed across the rounds:** text inputs use the sunken token so they don't vanish
+into their card in dark mode; segmented tabs carry a border so selection isn't hue-only;
+the rewards meter stops going near-invisible cyan on the yellow panel; Home's "Needs your
+attention" no longer carries good news (an unlocked offer now gets its own "Good news"
+heading — putting a cross-sell under a header that means "something is wrong" is the
+fastest way to make a senior audience distrust the header); April's MyPayments tile shows
+the amount due alongside its pill; the cross-sell button on MyCoverages is secondary for
+everyone rather than primary-for-some; one primary per card state on lapsed coverage; and
+the ID card screen is titled "Member ID card" with a real `tel:` link to member services.
+
+**Deliberately not done, and why.** Share / Save-to-wallet on the ID card screen: those
+would be fabricated integrations, which CLAUDE.md forbids outright — the `tel:` link is
+real (it hands off to the OS dialler) and the honest substitute for the rest is the
+existing "you can also keep a screenshot" line. The brand reviewer accepted this
+explicitly. Restructuring Home from eight equal cards into three or four large dashboard
+tiles: still the reviewers' standing recommendation and still genuinely worth doing, but
+it contradicts docs/01's stated "all eight section cards live on Home" and is IA surgery,
+not the visual polish this work was scoped to. Same for adding a next-steps/timeline block
+to the MyClaims list view. Both are logged here rather than done quietly.
+
+**Where it ended.** Both reviewers' `blocking` findings were fixed and re-verified by
+screenshot in every round. What remains in their reports is `notable` and below — mostly
+the two IA items above, plus a tail of copy and density suggestions. The honest summary is
+that the app cleared the bar it was failing (dark mode, brand presence, native feel,
+legibility) and now sits against a bar that's about information architecture, which is a
+different and larger piece of work.

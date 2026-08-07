@@ -203,11 +203,15 @@ function listView(policies, user, health, today) {
           ? `${available.length} more Wellabe product${available.length === 1 ? '' : 's'} you don't have yet.`
           : 'You already hold all six Wellabe product lines.'}
       </p>
+      <!-- Always secondary. This used to be primary for members in good
+           standing and secondary for lapsed ones, which meant (a) the same
+           card rendered two different ways depending on who was logged in,
+           and (b) for most members the loudest, last control on the coverage
+           screen was a cross-sell rather than anything to do with the
+           coverage they already hold. docs/01 asks for confident, not salesy
+           (visual QA finding). -->
       ${available.length
-        ? html`<button
-            class="btn btn--${policies.some((p) => coverageStatus(p, today).key !== 'active') ? 'secondary' : 'primary'} btn--block"
-            data-view="add"
-          >
+        ? html`<button class="btn btn--secondary btn--block" data-view="add">
             ${icons.plus()} See what else you can add
           </button>`
         : ''}

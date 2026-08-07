@@ -314,6 +314,12 @@ a {
 .card--accent {
   background: var(--color-brand-yellow-tint);
   border-color: var(--color-brand-yellow);
+  /* The tint doesn't flip for dark mode, so its ink can't either. */
+  color: var(--color-on-brand-yellow);
+}
+.card--accent .card__meta,
+.card--accent .disclosure {
+  color: var(--color-on-brand-yellow);
 }
 
 /* The 80/100 unlocked-offer card — the demo's hero moment. It has to read as a
@@ -484,7 +490,7 @@ a {
 }
 .pill--tier-gold {
   background: var(--color-brand-yellow-tint);
-  color: var(--color-text-primary);
+  color: var(--color-on-brand-yellow);
 }
 
 /* ======================================================= data row ========= */

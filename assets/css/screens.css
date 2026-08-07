@@ -97,6 +97,12 @@
   border: 1px solid var(--color-brand-yellow);
   border-radius: var(--radius-lg);
   padding: var(--space-4);
+  /* The tint doesn't flip for dark mode, so its ink can't either. */
+  color: var(--color-on-brand-yellow);
+}
+.today-card .today-card__meta,
+.today-card .ring__unit {
+  color: #55606b;
 }
 .today-card__head {
   display: flex;
@@ -148,8 +154,11 @@
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  border: 2px solid var(--color-text-secondary);
-  background: var(--color-surface);
+  /* Literal light values, because .today-card's yellow tint doesn't flip for
+     dark mode — a surface-coloured box on it rendered as a black square on a
+     pale panel. Same reasoning as the tint itself. */
+  border: 2px solid #55606b;
+  background: #ffffff;
   color: transparent;
 }
 .challenge__box svg {
@@ -250,13 +259,14 @@
   .section-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: var(--space-4);
-    /* Grid's default align-items: stretch makes every card match the tallest
-       card in its row — invisible at one column, but it stretched MyMailbox
-       to match MyCoverages' taller (two-link) card next to it, leaving dead
-       space at the bottom and stranding its chevron mid-card instead of
-       centered on its own content (visual QA finding). Cards keep their own
-       natural height instead. */
-    align-items: start;
+    /* Equal-height rows (grid's default stretch). This was briefly `start`
+       to stop a card being stretched to match a much taller neighbour and
+       stranding its chevron mid-card — but that neighbour was the two-link
+       MyCoverages card, which no longer exists now the ID card is its own
+       full-width tile. With every card the same shape again, stretch is
+       right: ragged bottom edges between row partners read as a grid that
+       drifts (visual QA finding). The chevron is pinned to the title line
+       below so it can't float in the extra height. */
   }
   /* The ID card is the headline object of the section, not one tile among
      eight — it keeps the full width of the grid rather than being squeezed
@@ -275,8 +285,12 @@
   .section-grid .section-card {
     align-items: flex-start;
   }
+  /* Pinned to the title line, not centred: with equal-height rows a short
+     card gets extra height, and a centred chevron would float in the middle
+     of that empty space instead of sitting beside the row it belongs to. */
   .section-grid .section-card__chevron {
-    align-self: center;
+    align-self: flex-start;
+    margin-top: 10px;
   }
   .illustration {
     max-width: 420px;
@@ -1151,6 +1165,8 @@
   border: 1px solid var(--color-brand-yellow);
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
+  /* The tint doesn't flip for dark mode, so its ink can't either. */
+  color: var(--color-on-brand-yellow);
 }
 .badge svg {
   width: 16px;

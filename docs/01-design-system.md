@@ -120,14 +120,20 @@ A few things are worth knowing before touching either theme's values:
   ink` (used by the toast and the ID card's footer band) has to get *lighter* than
   `--color-surface`, not darker — the darkest thing on a dark screen doesn't read as
   elevated, it reads as a hole in it.
-- **`--color-brand-yellow` never flips.** It's a brand constant, not a UI surface — the
-  Home hero panel and the ID card band are exactly as yellow in dark mode as in light.
-  `--color-on-brand-yellow`, the ink that sits on it, doesn't flip either, for the same
-  reason: text on solid yellow needs one fixed color regardless of theme.
-- **The document viewer (a rendered piece of mail) is exempt.** It stays paper-colored —
-  white background, dark ink — in both themes, because its whole job is to look like a
-  printed artifact. The digital ID card is *not* exempt; it's an app surface that happens
-  to look like a card, and themes normally.
+- **Brand-yellow surfaces are light surfaces, in both themes.** Neither
+  `--color-brand-yellow` nor `--color-brand-yellow-tint` flips — they're brand constants,
+  not UI surfaces — so the Home hero, the Today card, the rewards balance panel, the ID
+  card band, and the MyHealth badges are exactly as yellow in dark mode as in light.
+  Anything drawn on one of them uses `--color-on-brand-yellow` for ink, which doesn't flip
+  either. An earlier pass darkened the tint for dark mode and it rendered as a muddy olive
+  panel sitting between two bright yellow ones on the same scroll — it read as a rendering
+  error, not a surface. One rule, no exceptions, is what keeps that from recurring.
+- **Two things are exempt from theming entirely: the document viewer and the ID card.**
+  Both stay paper-colored — white body, dark ink — in both themes, because both are
+  facsimiles of physical objects (a letter that arrived in the mail; a card you hold up at
+  a clinic desk), not app surfaces that happen to be rectangular. Only the page chrome
+  around them darkens. This applies to the ID card wherever it appears, including its
+  condensed preview tile on Home.
 
 See `DECISIONS-LOG.md` for the full reasoning trail if any of the above needs revisiting.
 
