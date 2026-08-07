@@ -252,16 +252,19 @@ function coverageLine(policies, today) {
 }
 
 function coverageStatusLine(policies, today) {
+  // A non-breaking space before the status word keeps "· Active"/"· Lapsed" as one
+  // unit — otherwise a narrow column (the wide-tier 2-column Home grid) can wrap
+  // right after the middot and strand the status word alone on its own line.
   if (!policies.length) return 'Nothing on file yet';
   if (policies.length === 1) {
     const p = policies[0];
     const s = coverageStatus(p, today);
-    return `${PRODUCT_LABELS[p.product]} · ${s.label}`;
+    return `${PRODUCT_LABELS[p.product]} · ${s.label}`;
   }
   const worst = policies
     .map((p) => coverageStatus(p, today))
     .sort((a, b) => tone(b) - tone(a))[0];
-  return `${plural(policies.length, 'policy', 'policies')} · ${worst.label}`;
+  return `${plural(policies.length, 'policy', 'policies')} · ${worst.label}`;
 }
 
 const tone = (s) => ({ active: 0, pastDue: 1, lapsed: 2 })[s.key];
@@ -280,7 +283,9 @@ function paymentsLine(policies, today) {
   )[0];
   const status = coverageStatus(soonest, today);
   if (status.key !== 'active') return 'Payment past due';
-  return `Paid through ${formatDate(soonest.paidThroughDate)}`;
+  // Non-breaking spaces so the date never splits mid-date on a narrow card
+  // column ("September 3," on one line, "2026" orphaned on the next).
+  return `Paid through ${formatDate(soonest.paidThroughDate).replace(/ /g, ' ')}`;
 }
 
 function targetHref(target) {

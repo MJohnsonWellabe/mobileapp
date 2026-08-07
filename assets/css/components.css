@@ -95,6 +95,24 @@ a {
   .app-main {
     max-width: var(--content-max-wide);
   }
+  /* A full-width CTA is a reasonable single-column phone pattern, but at 720px
+     it becomes a huge teal slab with a two-word label lost in the middle
+     (visual QA finding). Capping and centering it reads as a considered
+     button again instead of a stretched one. */
+  .btn--block {
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  /* .data-row uses justify-content: space-between to pin a label left and a
+     value right — correct on a narrow phone, but at 720px it strands "Name"
+     and "Dave" a few hundred pixels apart with nothing to connect them
+     (visual QA finding). Capping the row keeps the pair close enough to
+     read as one unit, which matters more for this audience than filling
+     the card's full width. */
+  .data-row {
+    max-width: 480px;
+  }
 }
 
 .stack > * + * {

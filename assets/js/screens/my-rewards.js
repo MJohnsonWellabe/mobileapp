@@ -206,8 +206,9 @@ function balanceCard(account) {
     </div>
     <div class="meter"><span class="meter__fill" style="width:${(pct * 100).toFixed(0)}%"></span></div>
     <p class="disclosure">
-      Tier is based on lifetime points earned (${formatPoints(lifetime)} so far) and never goes
-      down when you redeem — your spendable balance above is separate, and that one does.
+      Your tier is based on lifetime points earned (${formatPoints(lifetime)} so far), and it
+      never goes down. Your spendable balance above is different — that's the one redeeming
+      an item lowers.
     </p>
   </div>`;
 }

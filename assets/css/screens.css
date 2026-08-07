@@ -252,6 +252,20 @@
   .section-grid .section-card__status {
     white-space: normal;
   }
+  /* .section-card centers icon/body/chevron on its own height, which is
+     invisible in a single column (every card is the same height as its
+     neighbor above/below) but breaks in a 2-column grid: a card whose status
+     wraps to two lines grows taller than its row partner, and centering
+     shifts that partner's title out of alignment with it. Top-align the
+     icon+body block instead so titles across a row always sit on the same
+     line; the chevron stays vertically centered since it doesn't carry text
+     that can wrap. */
+  .section-grid .section-card {
+    align-items: flex-start;
+  }
+  .section-grid .section-card__chevron {
+    align-self: center;
+  }
   .illustration {
     max-width: 420px;
     margin: 0 auto;

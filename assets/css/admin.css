@@ -54,6 +54,10 @@
   display: flex;
   gap: 0;
   overflow-x: auto;
+  /* Without this, the last tab's own padding is the only thing between its
+     label and the viewport edge at widths where the strip doesn't otherwise
+     overflow (e.g. 640px) — it reads as clipped rather than intentional. */
+  padding-right: var(--space-4);
   background: var(--color-primary-pressed);
   /* Same scroll cue as .chips (screens.css) — a color-matched gradient
      overlay was invisible in practice, since it fades to the same color as
