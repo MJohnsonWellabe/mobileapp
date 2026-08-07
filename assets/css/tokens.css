@@ -170,7 +170,7 @@
    than as a rule ("always white on primary") that only holds in light mode. */
 @media screen {
   :root[data-theme='dark'] {
-    --color-brand-yellow-tint: #332c10;
+    --color-brand-yellow-tint: #4a3a14;
 
     --color-primary: #4cc6d8;
     --color-primary-pressed: #34a8ba;

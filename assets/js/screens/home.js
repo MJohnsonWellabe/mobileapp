@@ -195,6 +195,11 @@ function todayCard(stats, todayLog, today) {
   const challenge = challengeForDate(today);
   const done = todayLog.includes(challenge.id) ? 1 : 0;
   const circumference = 2 * Math.PI * 30;
+  // The ring shows streak PROGRESS (same formula as MyHealth's ring, so the two
+  // never disagree) — not today's checkbox state. It used to fill only on
+  // `done`, so it looked identical (a bare dot) whether the streak was 0 days
+  // or 45; the checkbox row below already carries "did I do today's yet."
+  const pct = Math.min(1, stats.currentStreakDays / Math.max(7, stats.longestStreakDays || 7));
 
   return html`<div class="today-card">
     <div class="today-card__head">
@@ -206,7 +211,7 @@ function todayCard(stats, todayLog, today) {
             cx="36"
             cy="36"
             r="30"
-            stroke-dasharray="${(done * circumference).toFixed(1)} ${circumference.toFixed(1)}"
+            stroke-dasharray="${(pct * circumference).toFixed(1)} ${circumference.toFixed(1)}"
           />
         </svg>
         <span class="ring__label">

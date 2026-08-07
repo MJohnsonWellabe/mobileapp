@@ -331,7 +331,7 @@ function noticeRow(notice) {
     </span>
     ${notice.read
       ? ''
-      : html`<span class="pill pill--danger" style="align-self:flex-start;margin-top:2px">
+      : html`<span class="pill pill--info" style="align-self:flex-start;margin-top:2px">
           <span class="dot" aria-hidden="true"></span>New
         </span>`}
   </button>`;

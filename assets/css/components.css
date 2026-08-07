@@ -88,29 +88,34 @@ a {
 }
 
 /* Large phone / small tablet, portrait, 640px+ (docs/01 §Layout & responsiveness).
-   Every screen gets more room automatically — no per-page markup change needed.
-   .toast intentionally stays at --content-max: it's a transient message, not
-   primary content, and doesn't need the extra width. */
+   Opt-in via .app-main--wide, NOT a blanket rule on .app-main: a wider shared
+   container only helps a screen that actually has something to do with the
+   extra width (Home's 2-column card grid). Screens built from single-column
+   rows and cards — MyInformation, MyPayments, MyCoverages, MyRewards, etc. —
+   don't reflow at all, so widening their container just left every divider,
+   button, and value stub short of the card's new, wider edge (visual QA
+   finding: four different right edges inside one MyPayments card). Those
+   screens now simply keep their proven 375/430 layout at every width until
+   they get their own wide-tier design, rather than half-participating and
+   looking broken. Used together with .app-main, which already covers the
+   narrow-width case identically. */
 @media (min-width: 640px) {
-  .app-main {
+  .app-main--wide {
     max-width: var(--content-max-wide);
   }
   /* A full-width CTA is a reasonable single-column phone pattern, but at 720px
-     it becomes a huge teal slab with a two-word label lost in the middle
-     (visual QA finding). Capping and centering it reads as a considered
-     button again instead of a stretched one. */
-  .btn--block {
+     it becomes a huge teal slab with a two-word label lost in the middle. Only
+     matters inside a container that's actually wider, hence scoped here. */
+  .app-main--wide .btn--block {
     max-width: 420px;
     margin-left: auto;
     margin-right: auto;
   }
   /* .data-row uses justify-content: space-between to pin a label left and a
      value right — correct on a narrow phone, but at 720px it strands "Name"
-     and "Dave" a few hundred pixels apart with nothing to connect them
-     (visual QA finding). Capping the row keeps the pair close enough to
-     read as one unit, which matters more for this audience than filling
-     the card's full width. */
-  .data-row {
+     and "Dave" a few hundred pixels apart with nothing to connect them.
+     Capping the row keeps the pair close enough to read as one unit. */
+  .app-main--wide .data-row {
     max-width: 480px;
   }
 }

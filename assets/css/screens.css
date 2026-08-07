@@ -229,11 +229,10 @@
 }
 
 /* Large phone / small tablet, portrait, 640px+ (docs/01 §Layout &
-   responsiveness). .app-main itself already widens at this breakpoint
+   responsiveness). Home opts into the wider container via .app-main--wide
    (components.css); this scales Home's own hero elements to match rather
    than leaving them small in the middle of a wider column, and turns the
-   "Your Wellabe" list into two columns since there's finally room for it.
-   Running text stays capped for line length even though the container grew. */
+   "Your Wellabe" list into two columns since there's finally room for it. */
 @media (min-width: 640px) {
   .home-greeting {
     font-size: var(--text-3xl);
@@ -251,6 +250,13 @@
   .section-grid {
     grid-template-columns: repeat(2, 1fr);
     gap: var(--space-4);
+    /* Grid's default align-items: stretch makes every card match the tallest
+       card in its row — invisible at one column, but it stretched MyMailbox
+       to match MyCoverages' taller (two-link) card next to it, leaving dead
+       space at the bottom and stranding its chevron mid-card instead of
+       centered on its own content (visual QA finding). Cards keep their own
+       natural height instead. */
+    align-items: start;
   }
   /* .section-card centers icon/body/chevron on its own height, which is
      invisible in a single column (every card is the same height as its
@@ -270,9 +276,9 @@
     max-width: 420px;
     margin: 0 auto;
   }
-  .field__hint,
-  .empty__body,
-  .card p {
+  .app-main--wide .field__hint,
+  .app-main--wide .empty__body,
+  .app-main--wide .card p {
     max-width: 60ch;
   }
 }
@@ -889,6 +895,26 @@
 .card--accent-solid .card__meta,
 .card--accent-solid .disclosure {
   color: var(--color-on-brand-yellow);
+}
+
+/* Plain text, not a disabled button — a disabled .btn at 45% opacity measured
+   well under the 4.5:1 floor, and shaped like a button it invited a tap that
+   would do nothing (visual QA finding). --color-text-secondary is already
+   AA-checked, so this reads as information, not a broken control. */
+.reward-locked {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: var(--space-2) 0;
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-weight: var(--weight-medium);
+}
+.reward-locked svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
 }
 
 .balance {

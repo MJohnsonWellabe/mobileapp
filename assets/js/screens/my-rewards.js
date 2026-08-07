@@ -233,9 +233,7 @@ function storeCard(item, account, alreadyRedeemed) {
         ? html`<button class="btn btn--primary btn--block" data-redeem="${esc(item.id)}">
             Redeem for ${formatPoints(item.cost)} points
           </button>`
-        : html`<button class="btn btn--secondary btn--block" disabled>
-              ${formatPoints(short)} more points needed
-            </button>
+        : html`<p class="reward-locked">${icons.lock()} ${formatPoints(short)} more points needed</p>
             <p class="card__meta" style="text-align:center">
               Keep completing daily challenges and you'll get there.
             </p>`}
