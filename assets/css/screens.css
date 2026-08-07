@@ -384,6 +384,11 @@
   --color-border: #e2ddd7;
   --color-ink: #14181b;
   --color-text-on-dark: #ffffff;
+  /* Pinned too, because the Home tile's "View your ID card" action sits on
+     this same light card face — dark mode's brightened primary is a pale cyan
+     that all but disappears on white. */
+  --color-primary: #076874;
+  --color-surface-sunken: #ece7e2;
 
   border-radius: var(--radius-lg);
   overflow: hidden;
@@ -409,7 +414,12 @@
    card via ?view=card. */
 .idcard--preview {
   display: block;
-  color: inherit;
+  /* NOT `color: inherit` — that beat .idcard's pinned --color-text-primary
+     (later in source, same specificity) and let the member name and policy
+     number inherit the page's near-white text straight onto the pinned-white
+     card face, so in dark mode the tile's only two pieces of data were
+     invisible (visual QA finding). */
+  color: var(--color-text-primary);
   text-decoration: none;
   transition: transform 0.12s ease;
 }
