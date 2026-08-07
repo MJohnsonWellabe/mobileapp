@@ -258,6 +258,12 @@
        natural height instead. */
     align-items: start;
   }
+  /* The ID card is the headline object of the section, not one tile among
+     eight — it keeps the full width of the grid rather than being squeezed
+     into a half-width cell. */
+  .section-grid .idcard--preview {
+    grid-column: 1 / -1;
+  }
   /* .section-card centers icon/body/chevron on its own height, which is
      invisible in a single column (every card is the same height as its
      neighbor above/below) but breaks in a 2-column grid: a card whose status
@@ -268,16 +274,6 @@
      that can wrap. */
   .section-grid .section-card {
     align-items: flex-start;
-  }
-  /* .section-card--split's own align-items: stretch (screens/components.css)
-     loses to the flex-start rule just above once both match at this
-     breakpoint — same specificity, source order wins — which let its
-     .section-card__idcard link shrink to its own content width instead of
-     spanning the card, truncating the divider above "View ID card" to a
-     stub (visual QA finding). Re-assert stretch for this variant only; it
-     has no title/body row to top-align in the first place. */
-  .section-grid .section-card--split {
-    align-items: stretch;
   }
   .section-grid .section-card__chevron {
     align-self: center;
@@ -382,6 +378,48 @@
   background: var(--color-brand-yellow);
   color: var(--color-on-brand-yellow);
 }
+
+/* Home's condensed ID-card tile. Same card face as the full view (yellow
+   band, member, policy number) at two fields instead of four, because the
+   point is that it *looks* like the card you'd pull out of a wallet — the
+   competitor apps this was benchmarked against all treat it as something you
+   see, not a link you have to know to look for. Tapping it opens the full
+   card via ?view=card. */
+.idcard--preview {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+  transition: transform 0.12s ease;
+}
+.idcard--preview:active {
+  transform: scale(0.99);
+}
+.idcard--preview__body {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-4);
+  padding: var(--space-4);
+}
+.idcard--preview__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--tap-target-min);
+  padding: var(--space-2) var(--space-4) var(--space-3);
+  border-top: 1px solid var(--color-border);
+  color: var(--color-primary);
+  font-weight: var(--weight-medium);
+}
+.idcard--preview__foot svg {
+  width: 20px;
+  height: 20px;
+  flex: none;
+}
+.idcard--preview__chevron {
+  margin-left: auto;
+  display: flex;
+}
 .idcard__mark {
   display: block;
   width: 34px;
@@ -460,6 +498,26 @@
 
 /* The "pizza tracker". Stage state is carried by the marker shape, the label, and
    the timestamp — never by colour alone. */
+/* The list-view companion to .tracker below — four segments, filled up to the
+   current stage. Deliberately not interactive and not labelled per-segment:
+   the words live in the status pill directly above it and in the full tracker
+   one tap away, so this only has to answer "roughly how far along is this."
+   aria-label on the container carries the same fact for screen readers, since
+   the segments themselves are decorative. */
+.stagebar {
+  display: flex;
+  gap: var(--space-1);
+}
+.stagebar__seg {
+  flex: 1;
+  height: 6px;
+  border-radius: var(--radius-pill);
+  background: var(--color-track);
+}
+.stagebar__seg.is-done {
+  background: var(--color-primary);
+}
+
 .tracker {
   list-style: none;
   margin: 0;
@@ -587,18 +645,30 @@
      (tried first) was invisible in practice: fading dark text to white on an
      already-white chip background produces no perceptible change at all. */
   box-shadow: var(--shadow-scroll-cue);
+  /* The inset cue sits at the strip's right edge, so the last chip needs room
+     to clear it — without this it renders under the shadow and reads as
+     clipped rather than as "scroll for more" (visual QA finding). */
+  padding-right: var(--space-5);
 }
 .chip {
   flex: none;
-  min-height: 40px;
+  /* --tap-target-min, not the 40px this used to be: these are the only way to
+     use MyCare, so they're primary controls, not decoration. */
+  min-height: var(--tap-target-min);
   padding: 0 var(--space-4);
   border-radius: var(--radius-pill);
-  border: 1px solid var(--color-border-strong);
-  background: var(--color-surface);
+  /* Tinted fill + brand border, not a bare grey outline. Unpressed chips read
+     as disabled otherwise — an outline in --color-border-strong is the same
+     treatment a disabled control gets elsewhere, which is exactly the wrong
+     signal on the control that drives the whole screen. */
+  border: 1px solid var(--color-primary);
+  background: var(--color-primary-tint);
   font: inherit;
   font-size: var(--text-sm);
-  color: var(--color-text-primary);
+  font-weight: var(--weight-medium);
+  color: var(--color-primary);
   cursor: pointer;
+  transition: background-color 0.12s ease;
 }
 .chip[aria-pressed='true'] {
   background: var(--color-primary);

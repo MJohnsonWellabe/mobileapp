@@ -26,7 +26,7 @@ import {
   deriveHealthStats,
 } from '../format.js';
 import { html, esc, mount, on, sectionCard, skeletonList, toast, preloadIllustrations, illustration } from '../ui.js';
-import { icons } from '../icons.js';
+import { icons, wellabeMark } from '../icons.js';
 import { attentionItems } from '../notices.js';
 import { toggleChallenge, challengeForDate } from '../features/health.js';
 
@@ -115,6 +115,7 @@ function render(state) {
     <div>
       <h2 class="section-heading">Your Wellabe</h2>
       <div class="section-grid">
+        ${idCardTile(policies, user, today)}
         ${sectionCard({
           href: 'pages/my-mailbox.html',
           icon: 'mailbox',
@@ -122,7 +123,12 @@ function render(state) {
           status: unread ? plural(unread, 'new message') : "You're all caught up",
           badge: unread ? String(unread) : null,
         })}
-        ${coverageCard(policies, today)}
+        ${sectionCard({
+          href: 'pages/my-coverages.html',
+          icon: 'shield',
+          title: 'MyCoverages',
+          ...coverageCardProps(policies, today),
+        })}
         ${sectionCard({
           href: 'pages/my-claims.html',
           icon: 'claim',
@@ -133,7 +139,7 @@ function render(state) {
           href: 'pages/my-payments.html',
           icon: 'card',
           title: 'MyPayments',
-          status: paymentsLine(policies, today),
+          ...paymentsCardProps(policies, today),
         })}
         ${sectionCard({
           href: 'pages/my-rewards.html',
@@ -242,34 +248,46 @@ function todayCard(stats, todayLog, today) {
   </div>`;
 }
 
-/** MyCoverages' Home card, with a second tap target straight to the digital
- *  ID card — the one competitor feature every review agrees is worth
- *  surfacing directly rather than behind a list → Details detour. Defaults to
- *  the first active policy (or just the first, if none are active) when a
- *  member holds more than one; a shortcut has to point somewhere concrete. */
-function coverageCard(policies, today) {
-  if (!policies.length) {
-    return sectionCard({
-      href: 'pages/my-coverages.html',
-      icon: 'shield',
-      title: 'MyCoverages',
-      status: coverageStatusLine(policies, today),
-    });
-  }
-  const primary = policies.find((p) => coverageStatus(p, today).key === 'active') ?? policies[0];
-  return html`<div class="section-card section-card--split">
-    <a class="section-card__main" href="pages/my-coverages.html">
-      <span class="section-card__icon">${icons.shield()}</span>
-      <span class="section-card__body">
-        <span class="section-card__title">MyCoverages</span>
-        <span class="section-card__status">${esc(coverageStatusLine(policies, today))}</span>
+/** The digital ID card, as the headline object on Home rather than a link
+ *  buried in a list.
+ *
+ *  Competitive research this session was unanimous that this is the single
+ *  most-loved feature in every insurer app reviewed, and specifically because
+ *  it's surfaced as something you can *see*, not a text link you have to know
+ *  to look for. So it gets a real card face — the same yellow band and fields
+ *  as the full view in my-coverages.js — spanning the full width of the grid.
+ *
+ *  Defaults to the first active policy (or just the first, if none are
+ *  active) when a member holds more than one; a shortcut has to point
+ *  somewhere concrete, and the full MyCoverages list is one tap away for the
+ *  rest. */
+function idCardTile(policies, user, today) {
+  if (!policies.length) return '';
+  const policy = policies.find((p) => coverageStatus(p, today).key === 'active') ?? policies[0];
+  return html`<a
+    class="idcard idcard--preview"
+    href="pages/my-coverages.html?view=card&id=${esc(policy.id)}"
+  >
+    <span class="idcard__top">
+      <span class="idcard__mark" aria-hidden="true">${wellabeMark()}</span>
+      <span class="idcard__brand">wellabe</span>
+      <span class="idcard__type">${esc(PRODUCT_LABELS[policy.product])}</span>
+    </span>
+    <span class="idcard--preview__body">
+      <span class="idcard__field">
+        <span class="idcard__label">Member</span>
+        <span class="idcard__value idcard__value--lg">${esc(user.firstName)}</span>
       </span>
-      <span class="section-card__chevron">${icons.chevronRight()}</span>
-    </a>
-    <a class="section-card__idcard" href="pages/my-coverages.html?view=card&id=${esc(primary.id)}">
-      ${icons.card()} View ID card
-    </a>
-  </div>`;
+      <span class="idcard__field">
+        <span class="idcard__label">Policy number</span>
+        <span class="idcard__value idcard__value--mono">${esc(policy.policyNumber)}</span>
+      </span>
+    </span>
+    <span class="idcard--preview__foot">
+      ${icons.card()} <span>View your ID card</span>
+      <span class="idcard--preview__chevron">${icons.chevronRight()}</span>
+    </span>
+  </a>`;
 }
 
 /* ------------------------------------------------------- status lines ----- */
@@ -281,20 +299,32 @@ function coverageLine(policies, today) {
   return `You're covered. ${plural(policies.length, 'policy', 'policies')} active.`;
 }
 
-function coverageStatusLine(policies, today) {
-  // A non-breaking space before the status word keeps "· Active"/"· Lapsed" as one
-  // unit — otherwise a narrow column (the wide-tier 2-column Home grid) can wrap
-  // right after the middot and strand the status word alone on its own line.
-  if (!policies.length) return 'Nothing on file yet';
-  if (policies.length === 1) {
-    const p = policies[0];
-    const s = coverageStatus(p, today);
-    return `${PRODUCT_LABELS[p.product]} · ${s.label}`;
-  }
-  const worst = policies
-    .map((p) => coverageStatus(p, today))
-    .sort((a, b) => tone(b) - tone(a))[0];
-  return `${plural(policies.length, 'policy', 'policies')} · ${worst.label}`;
+/** sectionCard() props for MyCoverages.
+ *
+ *  A healthy state is one plain line ("Medicare Supplement · Active"); a state
+ *  the member has to act on returns a tone as well, so the status word renders
+ *  as the same icon+colour pill MyCoverages itself uses. Home used to show
+ *  "Lapsed" in the identical grey as "Active", which made the one card that
+ *  needed attention indistinguishable from the seven that didn't.
+ *
+ *  The non-breaking space before the middot keeps the status word from wrapping
+ *  onto its own line in a narrow grid column. */
+function coverageCardProps(policies, today) {
+  if (!policies.length) return { status: 'Nothing on file yet' };
+  const single = policies.length === 1;
+  const worst = single
+    ? coverageStatus(policies[0], today)
+    : policies.map((p) => coverageStatus(p, today)).sort((a, b) => tone(b) - tone(a))[0];
+  const prefix = single
+    ? PRODUCT_LABELS[policies[0].product]
+    : plural(policies.length, 'policy', 'policies');
+
+  if (worst.key === 'active') return { status: `${prefix} · ${worst.label}` };
+  return {
+    status: worst.label,
+    statusPrefix: prefix,
+    statusTone: worst.key === 'lapsed' ? 'danger' : 'warning',
+  };
 }
 
 const tone = (s) => ({ active: 0, pastDue: 1, lapsed: 2 })[s.key];
@@ -306,16 +336,17 @@ function claimsLine(claims) {
   return `${plural(claims.length, 'claim')}, all resolved`;
 }
 
-function paymentsLine(policies, today) {
-  if (!policies.length) return 'Nothing due';
+/** sectionCard() props for MyPayments — same good/bad split as coverage. */
+function paymentsCardProps(policies, today) {
+  if (!policies.length) return { status: 'Nothing due' };
   const soonest = [...policies].sort((a, b) =>
     a.paidThroughDate.localeCompare(b.paidThroughDate),
   )[0];
   const status = coverageStatus(soonest, today);
-  if (status.key !== 'active') return 'Payment past due';
+  if (status.key !== 'active') return { status: 'Past due', statusTone: 'warning' };
   // Non-breaking spaces so the date never splits mid-date on a narrow card
   // column ("September 3," on one line, "2026" orphaned on the next).
-  return `Paid through ${formatDate(soonest.paidThroughDate).replace(/ /g, ' ')}`;
+  return { status: `Paid through ${formatDate(soonest.paidThroughDate).replace(/ /g, ' ')}` };
 }
 
 function targetHref(target) {

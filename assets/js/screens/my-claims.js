@@ -120,11 +120,40 @@ function claimRow(claim, policies) {
       </div>
       <span class="pill pill--${s.tone}">${icons[s.icon]()}${esc(s.label)}</span>
     </div>
+    ${claim.status === 'Denied' ? '' : stageBar(claim)}
     <div style="display:flex;align-items:center;gap:var(--space-2)">
       <span class="card__meta" style="flex:1">${esc(s.summary)} · filed ${formatDate(claim.submittedAt)}</span>
       <span style="color:var(--color-text-secondary);flex:none">${icons.chevronRight()}</span>
     </div>
   </button>`;
+}
+
+/** A condensed four-segment version of the tracker, for the list view.
+ *
+ *  The full tracker() below is one tap away, but the list was previously a
+ *  status word and nothing else — a member couldn't tell "just filed" from
+ *  "nearly decided" without opening the claim. Same stage order and same
+ *  index math as tracker(), deliberately reading from the shared STAGES
+ *  constant rather than restating it, so the two can never disagree.
+ *
+ *  Denied claims skip this: they left the pipeline rather than finishing it,
+ *  and drawing a progress bar under a denial reads as progress toward
+ *  something. The danger pill and the detail view carry that state instead. */
+function stageBar(claim) {
+  const index = STAGES.indexOf(claim.status);
+  return html`<div
+    class="stagebar"
+    role="img"
+    aria-label="Stage ${index + 1} of ${STAGES.length}: ${esc(claim.status)}"
+  >
+    ${STAGES.map(
+      (stage, i) =>
+        html`<span
+          class="stagebar__seg ${i <= index ? 'is-done' : ''}"
+          title="${esc(stage)}"
+        ></span>`,
+    )}
+  </div>`;
 }
 
 function detailView(claim, policies) {

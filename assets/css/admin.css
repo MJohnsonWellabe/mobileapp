@@ -58,15 +58,17 @@
   display: flex;
   gap: 0;
   overflow-x: auto;
-  /* Without this, the last tab's own padding is the only thing between its
-     label and the viewport edge at widths where the strip doesn't otherwise
-     overflow (e.g. 640px) — it reads as clipped rather than intentional. */
-  padding-right: var(--space-4);
+  /* Room for the last tab to clear the scroll cue below, so it reads as
+     "there's more this way" rather than as a clipped label. */
+  padding-right: var(--space-6);
   background: var(--color-chrome-2);
-  /* Same scroll cue as .chips (screens.css) — a color-matched gradient
-     overlay was invisible in practice, since it fades to the same color as
-     what's underneath. An inset shadow reads regardless of background. */
-  box-shadow: inset -20px 0 12px -12px rgba(0, 0, 0, 0.35);
+  /* A LIGHT edge, not the dark one this used to carry. Same reasoning as
+     .chips (screens.css) — the cue has to contrast with what's under it — but
+     this strip's chrome is dark in both themes, so a black inset shadow on it
+     was very nearly invisible and the strip still read as clipped mid-word at
+     375px (visual QA finding, twice). Seven tabs will always overflow a phone
+     width; the strip just has to say so. */
+  box-shadow: inset -24px 0 14px -14px rgba(255, 255, 255, 0.5);
 }
 .admin-tab {
   flex: none;
@@ -145,16 +147,27 @@
 .admin-table tbody tr:hover {
   background: var(--color-background);
 }
+/* No underline: a text-decoration underline is the single most "this is a web
+   page, not an app" tell, and it was the one flagged here (visual QA finding).
+   Bold + the primary colour + a chevron already say "tappable" everywhere else
+   in this app, so this matches the member-side row treatment instead. */
 .admin-name {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
   border: 0;
   background: none;
   padding: 0;
   font: inherit;
   font-weight: var(--weight-bold);
   color: var(--color-primary);
-  text-decoration: underline;
   cursor: pointer;
   min-height: var(--tap-target-min);
+}
+.admin-name::after {
+  content: '›';
+  font-size: 1.2em;
+  line-height: 1;
 }
 
 .admin-cards {

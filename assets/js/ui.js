@@ -90,12 +90,26 @@ export function dataAttrs(data) {
     .join(' ');
 }
 
-export function sectionCard({ href, icon, title, status, badge }) {
+/**
+ * @param {object} opts
+ * @param {string} [opts.statusPrefix]  plain text shown before the pill, e.g. a
+ *        product name. Only used with `statusTone`.
+ * @param {string} [opts.statusTone]    when set, `status` renders as a pill in
+ *        this tone instead of plain text. Reserved for states a member has to
+ *        act on (lapsed coverage, a past-due payment) — the same icon+colour
+ *        treatment those states already get on their own screens, so Home
+ *        doesn't quietly render "Lapsed" in the identical grey as "Active".
+ */
+export function sectionCard({ href, icon, title, status, badge, statusPrefix, statusTone }) {
   return html`<a class="section-card" href="${esc(href)}">
     <span class="section-card__icon">${icons[icon]()}</span>
     <span class="section-card__body">
       <span class="section-card__title">${esc(title)}</span>
-      <span class="section-card__status">${esc(status)}</span>
+      <span class="section-card__status">
+        ${statusTone
+          ? html`${statusPrefix ? html`${esc(statusPrefix)} ` : ''}${pill(status, statusTone)}`
+          : esc(status)}
+      </span>
     </span>
     ${badge ? html`<span class="pill pill--danger">${esc(badge)}</span>` : ''}
     <span class="section-card__chevron">${icons.chevronRight()}</span>
