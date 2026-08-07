@@ -75,11 +75,31 @@ a {
 
 /* ========================================================== layout ======== */
 
+/* min-height + flex column so a screen always spans the visible area instead of
+   ending wherever its content happens to stop. Without this, `.login` was the
+   only screen in the whole app that filled a phone — every signed-in screen left
+   a third to two thirds of the display as bare background above the tab bar.
+   `.login` already used exactly this idiom, so it's a pattern being reused
+   rather than invented.
+
+   Side padding is 12px on a phone, not 16px: at 21px body text those 8px of
+   reclaimed line length are the difference between a status line fitting and
+   wrapping. Cards keep their own internal padding, so nothing touches the
+   glass. The 640px+ tier puts it back to 16px, where there's width to spare. */
 .app-main {
   max-width: var(--content-max);
   margin: 0 auto;
-  padding: var(--space-4) var(--space-4)
+  min-height: calc(100dvh - var(--topbar-height));
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-4) var(--space-3)
     calc(var(--nav-height) + env(safe-area-inset-bottom) + var(--space-4));
+}
+
+/* Flex items shrink along the main axis by default, which in a column would let
+   tall content compress instead of scrolling. Nothing here should ever squash. */
+.app-main > * {
+  flex-shrink: 0;
 }
 
 /* Screens with no bottom tab bar (login, admin) don't reserve the clearance. */
@@ -100,6 +120,11 @@ a {
    looking broken. Used together with .app-main, which already covers the
    narrow-width case identically. */
 @media (min-width: 640px) {
+  /* Width to spare here, so the phone-width 12px side padding goes back to 16. */
+  .app-main {
+    padding-left: var(--space-4);
+    padding-right: var(--space-4);
+  }
   .app-main--wide {
     max-width: var(--content-max-wide);
   }

@@ -89,13 +89,19 @@
   /* ---- Type -------------------------------------------------------------- */
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial,
     sans-serif;
-  --text-xs: 13px;
-  --text-sm: 16px; /* was 15px — the workhorse size for status pills and dashboard status lines */
-  --text-base: 17px; /* floor for body copy — deliberate, not an oversight */
-  --text-lg: 20px;
-  --text-xl: 24px;
-  --text-2xl: 30px;
-  --text-3xl: 38px;
+  /* Large print, deliberately. An earlier scale (13/16/17/20/24/30/38) nominally
+     had a 17px body floor, but an audit found 46 of 81 font-size declarations
+     resolved to 16px or smaller and only 8 used --text-base at all — --text-sm
+     was silently doing body-copy work in 39 places. A real reader on a real
+     phone could not read the result. Every step is ~25% larger now, and the
+     floor is 21px. If a screen no longer fits, the screen is what changes. */
+  --text-xs: 16px;
+  --text-sm: 19px; /* the workhorse: status pills, dashboard status lines, card meta */
+  --text-base: 21px; /* floor for body copy */
+  --text-lg: 25px;
+  --text-xl: 30px;
+  --text-2xl: 36px;
+  --text-3xl: 44px;
   --leading-body: 1.5;
   --leading-heading: 1.25;
   --weight-regular: 400;
@@ -134,11 +140,14 @@
   --art-opacity-login: 0.4;
 
   /* ---- Navigation & targets ---------------------------------------------- */
-  --nav-height: 64px;
-  --nav-icon-size: 26px;
-  --nav-label-size: 12px;
-  --topbar-height: 56px;
-  --tap-target-min: 48px; /* above WCAG 2.2 AA and above the common 44px */
+  /* Grown alongside the type scale. A 48px control wrapped around 21px text is
+     cramped, and 12px nav labels were the smallest text in the whole app —
+     smaller than the fine print they sat beneath. */
+  --nav-height: 76px;
+  --nav-icon-size: 28px;
+  --nav-label-size: 15px;
+  --topbar-height: 60px;
+  --tap-target-min: 56px; /* well above WCAG 2.2 AA; sized for 21px labels */
   --tap-target-spacing: 8px;
   --content-max: 560px;
   /* Large phone / small tablet, portrait, 640px and up (docs/01 §Layout &

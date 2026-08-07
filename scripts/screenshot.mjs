@@ -4,10 +4,28 @@
 //   node scripts/screenshot.mjs --screen my-claims --member debbie --member todd
 //   node scripts/screenshot.mjs --all
 //   node scripts/screenshot.mjs --screen my-mailbox --member debbie --print
+//   node scripts/screenshot.mjs --all --device            (true-size phone frames)
 //
 // Output lands in scripts/output/ as <screen>_<member>_<width>.png, which is
 // gitignored. The visual-qa-reviewer subagent reads those PNGs and nothing else —
 // it never sees source code, which is the entire point.
+//
+// TWO CAPTURE MODES, and they answer different questions:
+//
+//   default    Grows the viewport to the full content height, so one PNG is the
+//              whole scrollable page. Good for judging a screen end to end.
+//
+//   --device   A real phone frame (390x844 / 430x932), NO resize, and crucially
+//              deviceScaleFactor: 1 so one PNG pixel is one CSS pixel. Use this
+//              to judge anything about SIZE — is the text big enough, does the
+//              first screenful earn its space, where does the fold actually land.
+//
+// That second mode exists because the default one is structurally blind to type
+// size: at deviceScaleFactor 2 a reviewer looking at the PNG sees every glyph at
+// twice its real angular size, so 13px fine print looks perfectly comfortable and
+// isn't. Four rounds of review reported "body text is comfortably large" while a
+// real reader on a real phone could not read the app. Judge size in --device mode
+// only.
 //
 // The session is planted directly into sessionStorage via addInitScript rather than
 // driven through the login form: it is faster, it cannot fail for reasons unrelated
@@ -26,8 +44,15 @@ const OUT_DIR = 'scripts/output';
 /** docs/01: a standard phone, a large phone / small tablet in portrait, and the
  *  640px+ wide tier (large phone / small tablet where the shared container and
  *  Home's hero elements widen — see components.css/screens.css). 768 checks the
- *  wide tier holds up well past its 640px trigger, not just right at it. */
-export const BREAKPOINTS = [375, 430, 640, 768];
+ *  wide tier holds up well past its 640px trigger, not just right at it.
+ *  390 is where most current phones actually sit; 375 is iPhone-SE era. */
+export const BREAKPOINTS = [375, 390, 430, 640, 768];
+
+/** Real phone frames for --device mode: [width, height]. */
+export const DEVICES = {
+  390: 844, // iPhone 14/15/16 class
+  430: 932, // Pro Max class
+};
 
 /** Screen registry. `path` is relative to the repo root; `needs` is the seeded
  *  member state that makes the screen interesting, used by --all. */
@@ -71,11 +96,12 @@ const MEMBER_IDS = {
 };
 
 function parseArgs(argv) {
-  const out = { screens: [], members: [], all: false, print: false, widths: null, emulator: true, theme: 'light' };
+  const out = { screens: [], members: [], all: false, print: false, widths: null, emulator: true, theme: 'light', device: false };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === '--all') out.all = true;
     else if (a === '--print') out.print = true;
+    else if (a === '--device') out.device = true;
     else if (a === '--no-emulator') out.emulator = false;
     else if (a === '--screen') out.screens.push(argv[++i]);
     else if (a === '--member') out.members.push(argv[++i]);
@@ -87,7 +113,7 @@ function parseArgs(argv) {
   return out;
 }
 
-export async function capture({ screens, members, all, print, widths, emulator, query, name, theme = 'light' }) {
+export async function capture({ screens, members, all, print, widths, emulator, query, name, theme = 'light', device = false }) {
   const targets = [];
   if (all) {
     for (const [screen, list] of Object.entries(BATCH)) {
@@ -107,7 +133,7 @@ export async function capture({ screens, members, all, print, widths, emulator, 
   fs.mkdirSync(OUT_DIR, { recursive: true });
   const { server, origin } = await listen();
   const browser = await chromium.launch({ executablePath: CHROMIUM });
-  const sizes = widths ?? BREAKPOINTS;
+  const sizes = widths ?? (device ? Object.keys(DEVICES).map(Number) : BREAKPOINTS);
   const written = [];
 
   try {
@@ -120,8 +146,10 @@ export async function capture({ screens, members, all, print, widths, emulator, 
 
       for (const width of sizes) {
         const context = await browser.newContext({
-          viewport: { width, height: 900 },
-          deviceScaleFactor: 2,
+          viewport: { width, height: device ? (DEVICES[width] ?? 844) : 900 },
+          // 1 in --device mode so a PNG pixel is a CSS pixel and text is judged
+          // at true size; 2 otherwise for a crisp full-page image.
+          deviceScaleFactor: device ? 1 : 2,
           isMobile: true,
           hasTouch: true,
         });
@@ -160,19 +188,27 @@ export async function capture({ screens, members, all, print, widths, emulator, 
 
         if (print) await page.emulateMedia({ media: 'print' });
 
-        // Grow the viewport to the content height and capture normally, rather
-        // than using fullPage. With fullPage, Chromium leaves position:fixed
-        // elements at their original viewport offset, so the bottom tab bar lands
-        // in the middle of the image — which reads as a layout bug to a reviewer
-        // who is only allowed to look at the picture. Resizing puts fixed chrome
-        // where a member would actually see it.
-        const height = await page.evaluate(() =>
-          Math.min(6000, Math.ceil(document.documentElement.scrollHeight)),
-        );
-        await page.setViewportSize({ width, height: Math.max(height, 700) });
-        await page.waitForTimeout(120);
+        if (!device) {
+          // Grow the viewport to the content height and capture normally, rather
+          // than using fullPage. With fullPage, Chromium leaves position:fixed
+          // elements at their original viewport offset, so the bottom tab bar lands
+          // in the middle of the image — which reads as a layout bug to a reviewer
+          // who is only allowed to look at the picture. Resizing puts fixed chrome
+          // where a member would actually see it.
+          //
+          // The cost, and the reason --device exists: this erases the fold. A page
+          // taller than the viewport becomes one continuous strip, so nothing in the
+          // image says where a screenful ends or where the tab bar really sits.
+          const height = await page.evaluate(() =>
+            Math.min(6000, Math.ceil(document.documentElement.scrollHeight)),
+          );
+          await page.setViewportSize({ width, height });
+          await page.waitForTimeout(120);
+        }
 
-        const file = `${name ?? screen}_${member}_${width}${theme === 'dark' ? '_dark' : ''}${print ? '_print' : ''}.png`;
+        // --device shots get a suffix so a true-size frame is never mistaken for
+        // a full-page one — they look very different and mean different things.
+        const file = `${name ?? screen}_${member}_${width}${device ? 'w' : ''}${theme === 'dark' ? '_dark' : ''}${print ? '_print' : ''}.png`;
         await page.screenshot({ path: path.join(OUT_DIR, file) });
         written.push(file);
         console.log(`  ${file}${problems.length ? `   !! ${problems[0]}` : ''}`);

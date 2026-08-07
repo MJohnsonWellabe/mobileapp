@@ -81,15 +81,20 @@ against the table above, not assumed.
 - **Font:** a system-first sans-serif stack (`-apple-system, "Segoe UI", Roboto, Helvetica,
   Arial, sans-serif`). No web font — it would add load time and a point of failure for a
   demo, and Wellabe's brand font is not among the assets provided.
-- **Base body size:** 17px minimum on mobile. This is a deliberate accessibility choice for
-  this member base, not an oversight.
-- **Scale:** 13 / 16 / 17 / 20 / 24 / 30 / 38px. Never an arbitrary one-off size. The 16px
-  step (`--text-sm`) was 15px until a later pass bumped it — it's the workhorse size for
-  status pills, every Home dashboard status line, and admin table bodies, i.e. exactly the
-  "readable in under two seconds" content principle 2 below cares about, so it doesn't get
-  to sit below the rest of the scale's spirit even though it's technically the "secondary"
-  step.
-- **Line height:** 1.5 for body copy, 1.25 for headings.
+- **Base body size:** **21px** minimum on mobile. This is large print on purpose. An
+  earlier version of this document set the floor at 17px and called that "a deliberate
+  accessibility choice for this member base" — it wasn't enough, and worse, the floor
+  wasn't holding: an audit found **46 of the app's 81 font-size declarations resolved to
+  16px or smaller**, with only 8 using the body token at all. `--text-sm` had quietly
+  become the app's real body size, carrying card descriptions, every dashboard status
+  line, ID card field labels, and entire document bodies. A real reader on a real phone
+  could not read the result. The floor is now 21px and the whole scale moved with it.
+- **Scale:** 16 / 19 / 21 / 25 / 30 / 36 / 44px. Never an arbitrary one-off size. Note
+  that the smallest step is now 16px — the *old* body floor — so nothing in the app is
+  set smaller than what used to be considered body copy. If a screen no longer fits its
+  content at this scale, the screen is what changes, not the type.
+- **Line height:** 1.5 for body copy, 1.25 for headings. Do not trim this to reclaim
+  vertical space; for this audience that trade is backwards.
 - **Weights:** 400 body, 600 emphasis and labels, 700 headings and active nav.
 - **Never rely on weight or color alone to convey status** — pair with an icon and a label.
 
@@ -139,14 +144,25 @@ See `DECISIONS-LOG.md` for the full reasoning trail if any of the above needs re
 
 ## Layout & responsiveness
 
-- Two required breakpoints: **375px** (standard phone) and **430–600px** (large phone /
-  small tablet, portrait). Both are hard acceptance criteria on every screen.
+- Two required breakpoints: **390px** (standard current phone — iPhone 12–16, Pixel,
+  Galaxy all sit at 390–412) and **430–600px** (large phone / small tablet, portrait).
+  Both are hard acceptance criteria on every screen. 375px is still worth checking as the
+  iPhone-SE floor, but it is no longer the primary target.
 - Single-column layouts throughout at these two sizes. No multi-column forms.
-- **Minimum touch target: 48×48px**, with at least 8px of visible spacing between adjacent
-  targets. This is above WCAG 2.2's 24×24 AA floor and above the common 44×44 figure, and
-  matches Material's 48dp. It is a deliberate choice for a member base with a meaningful
-  share of reduced dexterity. Inline text links within body copy are the only exception,
-  and they get 12px of vertical padding.
+- **Minimum touch target: 56×56px**, with at least 8px of visible spacing between adjacent
+  targets. Well above WCAG 2.2's 24×24 AA floor and the common 44×44 figure; it was 48px
+  until the type scale grew, and a 48px control wrapped around 21px text is cramped. A
+  deliberate choice for a member base with a meaningful share of reduced dexterity.
+  Inline text links within body copy are the only exception, and they get 12px of
+  vertical padding.
+- **Every screen fills the viewport.** `.app-main` carries
+  `min-height: calc(100dvh - var(--topbar-height))` and is a flex column, so a screen
+  always spans the visible area rather than ending wherever its content happens to stop.
+  Before this rule existed, the login screen was the only screen in the app that filled a
+  phone — every signed-in screen left a third to two thirds of the display as bare
+  background above the tab bar. Where a screen genuinely has little to say, give it
+  something worth reading (MyClaims' "What happens next") or let the decorative tail
+  absorb the slack with `margin-top: auto` — do not leave a void.
 - Sticky primary actions must never be covered by the tab bar. Every scrollable container
   reserves clearance:
   ```css
@@ -156,7 +172,10 @@ See `DECISIONS-LOG.md` for the full reasoning trail if any of the above needs re
   produce uncomfortably long line lengths.
 - **A third, additive tier at 640px+** (large phone / small tablet where there's
   genuinely extra room to use, not just extra margin): the shared container widens to
-  720px app-wide, running text stays capped at 60ch so it doesn't get harder to read
+  720px — **opt-in via `.app-main--wide`, currently Home only, not app-wide.** Screens
+  built from single-column rows don't reflow into extra width, and widening their
+  container just left dividers and buttons stopping short of the card's new edge. Running
+  text stays capped at 60ch so it doesn't get harder to read
   just because the screen got wider, and card-grid lists (currently just Home's "Your
   Wellabe" section) become two columns instead of one long column. Home additionally
   scales up its greeting, streak ring, and illustration so the extra width reads as

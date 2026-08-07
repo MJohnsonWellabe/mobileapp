@@ -1116,3 +1116,81 @@ the two IA items above, plus a tail of copy and density suggestions. The honest 
 that the app cleared the bar it was failing (dark mode, brand presence, native feel,
 legibility) and now sits against a bar that's about information architecture, which is a
 different and larger piece of work.
+
+## Part 8: large print, and why four review rounds said the text was fine
+
+The human opened the live site on their phone and said they could barely read it, that no
+senior could, and that it doesn't fill the screen. Both true. This is a correction of my
+own work, twice over.
+
+**The claim I made in Part 6 was wrong.** That pass was titled "bigger text for a senior
+audience" and delivered a single token change — `--text-sm` 15px → 16px — plus promoting
+three `--text-xs` sites. I described that as addressing senior legibility. An audit this
+round found what was actually true: **46 of the app's 81 font-size declarations resolved
+to 16px or smaller, and only 8 used `--text-base` at all.** The documented 17px "body
+floor" was close to fiction. `--text-sm` had quietly become the real body size across 39
+selectors — card descriptions, every Home status line, ID card field labels, the entire
+document viewer body. Raising `--text-base` alone would have changed almost nothing;
+that's why the earlier nudge accomplished almost nothing.
+
+**Why no review round caught it, which matters more than the bug.** `scripts/screenshot.mjs`
+captured at `deviceScaleFactor: 2`. A 375px-wide capture became a 750px-wide PNG, so any
+reviewer — subagent or human — looking at that image saw every glyph at roughly **twice
+its real angular size**. 13px fine print rendered as 26 device pixels and looked entirely
+comfortable. The `visual-qa-reviewer` is defined to read "those PNGs and nothing else," so
+it was structurally incapable of judging type size, and it reported "body text is
+comfortably above 17px" across four separate rounds. A second, smaller blind spot: for any
+page taller than the 900px starting viewport the tool grew the viewport to the full
+content height, which erases the fold — no image ever showed what one screenful looks
+like, or where the tab bar actually sits relative to content.
+
+I initially assumed the resize was *hiding* the empty space by cropping to content. The
+audit disproved that — `scrollHeight` is never less than `clientHeight`, so short screens
+always photographed at the full 900px with the emptiness visible (which also makes
+`Math.max(height, 700)` dead code). Worth recording because it's the kind of plausible
+guess that would have sent the fix in the wrong direction.
+
+**Fixed the tool first**, so the change could be judged honestly rather than asserted: a
+new `--device` mode captures at a real phone frame (390×844, 430×932) with **no resize and
+`deviceScaleFactor: 1`**, so one PNG pixel is one CSS pixel and text is seen at true size.
+The existing full-page mode stays — the two answer different questions, and the file now
+says which mode to trust for which. 390 was added to the default breakpoints; 375 is
+iPhone-SE era and most current phones sit at 390–412.
+
+**The scale**, roughly +25% throughout: 13/16/17/20/24/30/38 → **16/19/21/25/30/36/44**,
+with the nav label going 12px → 15px (it had been the smallest text in the app, smaller
+than the fine print above it), `--tap-target-min` 48 → 56px, and `--nav-height` 64 → 76px
+to hold a bigger icon and label. `--leading-body` stays at 1.5 — trimming line height to
+reclaim space is exactly the wrong trade here. The smallest step in the app is now 16px,
+i.e. the *old* body floor, so nothing is set smaller than what used to count as body copy.
+
+**Filling the screen.** `.app-main` had no `min-height`, no `height`, no `display` — a
+plain block ending wherever content ended. `min-height: 100dvh` existed exactly once in
+the codebase, on `.login`. So the login screen was the only screen in the app that filled
+a phone; every signed-in screen failed to, by construction. `.app-main` now carries
+`min-height: calc(100dvh - var(--topbar-height))` and is a flex column, reusing the idiom
+`.login` already established. `.illustration` gets `margin-top: auto` so leftover height
+collects above it and it settles near the tab bar rather than leaving a void. Side padding
+drops 16px → 12px at phone widths (restored at 640px+), which at 21px body text is the
+difference between a status line fitting and wrapping.
+
+Worth noting from the audit: **the layout was already tight, not bloated** — 93% of
+spacing uses are ≤16px and `--space-12` is entirely unused. So the emptiness was never
+padding to squeeze out; bigger type absorbs it.
+
+**MyClaims got real content rather than a stretch.** Its populated state was one card and
+a button on a bare screen — flagged by both reviewers three rounds running and deferred by
+me twice. It now carries a numbered "What happens next" block: how long claims take, where
+we'll write if we need something, what happens at a decision. That's the set of questions
+this membership actually rings member services about, so it's information rather than
+filler placed to fill height.
+
+**docs/01 was revised first, not retrofitted.** `tokens.css` declares docs/01 the source of
+truth ("if a value here and a value there disagree, docs/01 is right and this file is
+wrong"), and the audit's sharpest finding was that the code was *fully compliant with the
+spec* — the spec was what produced small text. Leaving the doc alone would have invited a
+correct-looking revert. Updated: the type scale and the body-floor justification (now
+stating plainly why 17px failed), the 48px → 56px touch target, and a new rule the document
+had never contained at all — nothing in it said anything about vertical fill or viewport
+height, which is precisely why `.app-main` never had a `min-height`. Also fixed a stale
+line claiming the 720px container is "app-wide" when Part 7 deliberately made it opt-in.

@@ -106,7 +106,33 @@ function listView(claims, policies) {
     <button class="btn btn--primary btn--block" data-action="new">
       ${icons.plus()} File a new claim
     </button>
+
+    ${claims.length ? whatHappensNext() : ''}
   `;
+}
+
+/** Shown under the claims list, not the empty state — the empty state already
+ *  has its own illustration and copy.
+ *
+ *  This exists because the populated list was one card and a button on an
+ *  otherwise bare screen (visual QA finding, three rounds running), and because
+ *  the questions it answers are the ones this membership actually rings member
+ *  services about. It's real information, not filler to fill height. */
+function whatHappensNext() {
+  return html`<div class="card stack-sm">
+    <h2 class="card__title">What happens next</h2>
+    <ol class="next-steps">
+      <li>We check your claim against your policy. Most take about two weeks.</li>
+      <li>If we need anything else from you, we'll write to you in MyMailbox.</li>
+      <li>
+        When there's a decision you'll get a notice, and this page will show it. Approved
+        claims are paid to you directly.
+      </li>
+    </ol>
+    <p class="card__meta">
+      You don't need to do anything while a claim is being worked on.
+    </p>
+  </div>`;
 }
 
 function claimRow(claim, policies) {

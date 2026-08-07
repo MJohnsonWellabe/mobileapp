@@ -232,9 +232,14 @@
   gap: var(--space-3);
 }
 
+/* margin-top: auto inside .app-main's flex column, so on a short screen the
+   leftover height collects ABOVE the art and the art settles near the tab bar,
+   rather than the screen ending early and leaving a void underneath. Centred
+   horizontally so it doesn't hug the left edge once it's the last thing. */
 .illustration {
   opacity: 0.35;
   max-width: 320px;
+  margin: auto auto 0;
 }
 
 /* Large phone / small tablet, portrait, 640px+ (docs/01 §Layout &
@@ -294,7 +299,9 @@
   }
   .illustration {
     max-width: 420px;
-    margin: 0 auto;
+    /* Keeps the push-to-bottom behaviour from the base rule; only the width
+       changes here. Was `margin: 0 auto`, which silently cancelled it. */
+    margin: auto auto 0;
   }
   .app-main--wide .field__hint,
   .app-main--wide .empty__body,
@@ -550,6 +557,19 @@
    one tap away, so this only has to answer "roughly how far along is this."
    aria-label on the container carries the same fact for screen readers, since
    the segments themselves are decorative. */
+/* Numbered, because "what happens next" is a sequence and a senior audience
+   should not have to infer the order from paragraph position. */
+.next-steps {
+  margin: 0;
+  padding-left: var(--space-5);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.next-steps li {
+  padding-left: var(--space-1);
+}
+
 .stagebar-wrap {
   display: flex;
   flex-direction: column;
