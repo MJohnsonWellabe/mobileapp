@@ -88,27 +88,51 @@ page({
 
 /* ------------------------------------------------------------- views ----- */
 
-/** The brand band for MyClaims.
+/** The band at the top of MyClaims.
  *
- *  An open claim is the reason anyone opens this screen, so when there is one
- *  the figure is how many are still moving. When everything is settled, the
- *  figure becomes the money actually paid out — which is the other question a
- *  member asks here, and the one the list cards never used to answer at all.
- *  The empty state has its own artwork and headline, so it gets no band. */
+ *  Three states, and the third one is why this function is shaped like this.
+ *
+ *  The money version of this band gave Debbie — whose critical-illness claim was
+ *  DENIED — a 44px "$0.00 / paid to you so far" in the same triumphant yellow
+ *  panel that tells Todd he received $486.20. Both reviewers called it the worst
+ *  screen in the app and the most quotable screenshot in the set. When nothing
+ *  was paid, this must not be a money band at all: it leads with what actually
+ *  happened and what she can do about it.
+ *
+ *  The open-claims count also has to reconcile with the "Your claims (n)" header
+ *  directly beneath it — two different numbers 130px apart read as a bug — so the
+ *  note accounts for the settled remainder. */
 function claimsHeadline(claims) {
   const open = claims.filter((c) => !['Paid', 'Denied'].includes(c.status));
+  const settled = claims.length - open.length;
+
   if (open.length) {
     return headlineBand({
+      icon: 'clock',
       figure: String(open.length),
       caption: open.length === 1 ? 'claim in progress' : 'claims in progress',
-      note: `We'll write to you in MyMailbox each time ${open.length === 1 ? 'it moves' : 'one moves'} to a new stage.`,
+      note: settled
+        ? `${settled === 1 ? '1 other claim is' : `${settled} other claims are`} already settled. We'll write to you in MyMailbox at every stage.`
+        : "We'll write to you in MyMailbox at every stage.",
     });
   }
+
   const paidOut = claims.reduce((sum, c) => sum + (c.paidAmount ?? 0), 0);
+  if (!paidOut) {
+    return headlineBand({
+      tone: 'attention',
+      icon: 'alert',
+      headline: claims.length === 1 ? "Your claim wasn't approved" : 'None of your claims were approved',
+      caption: 'A decision has been made',
+      note: 'You can ask us to look at it again. Open the claim below to see the reason.',
+    });
+  }
+
   return headlineBand({
+    icon: 'checkCircle',
     figure: formatMoney(paidOut),
     caption: 'paid to you so far',
-    note: `Across ${claims.length === 1 ? '1 settled claim' : `${claims.length} settled claims`}.`,
+    note: `Across ${settled === 1 ? '1 settled claim' : `${settled} settled claims`}.`,
   });
 }
 
@@ -254,8 +278,13 @@ function stageBar(claim) {
   const denied = claim.status === 'Denied';
   const index = denied ? STAGES.length - 1 : STAGES.indexOf(claim.status);
   const toneClass = denied ? 'stagebar--denied' : claim.status === 'Paid' ? 'stagebar--done' : '';
+  // Denied keeps the "Step n of n" prefix every other card carries. Dropping it
+  // left the one card that most needs an unambiguous stage label as the only one
+  // without one, so a fully-filled red bar and a fully-filled green bar differed
+  // by hue alone — the worst possible pair for age-related colour vision change
+  // (visual QA finding).
   const caption = denied
-    ? 'Closed — not approved'
+    ? `Step ${STAGES.length} of ${STAGES.length} · Closed, not approved`
     : `Step ${index + 1} of ${STAGES.length} · ${claim.status}`;
 
   return html`<div class="stagebar-wrap">

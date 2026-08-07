@@ -109,7 +109,9 @@ function render(state) {
   return html`
     <div class="home-hero">
       <h1 class="home-greeting">Hello, ${esc(user.firstName)}</h1>
-      <p class="home-sub">${esc(coverageLine(policies, today))}</p>
+      ${coverageLine(policies, today)
+        ? html`<p class="home-sub">${esc(coverageLine(policies, today))}</p>`
+        : ''}
     </div>
 
     ${attention.length ? attentionCard(attention) : ''} ${todayCard(stats, todayLog, today)}
@@ -306,10 +308,19 @@ function idCardTile(policies, user, today) {
 
 /* ------------------------------------------------------- status lines ----- */
 
+/* Returns null when something needs attention, so the hero stops making a
+   status claim it can't back up in the colour it's wearing.
+   The hero is a saturated-yellow panel. It used to carry "One of your policies
+   needs attention." in exactly the same reassuring yellow that tells a healthy
+   member "You're covered" — so at a glance April's lapsed coverage and Dave's
+   healthy coverage looked identical, and the hero visually out-shouted the red
+   alert card sitting directly beneath it (visual QA finding, both reviewers).
+   The alert card is already the right place for that message, in the right
+   colour, so the hero simply greets and gets out of the way. */
 function coverageLine(policies, today) {
   if (!policies.length) return 'You have no coverage on file.';
   const lapsed = policies.filter((p) => coverageStatus(p, today).key !== 'active');
-  if (lapsed.length) return 'One of your policies needs attention.';
+  if (lapsed.length) return null;
   return `You're covered. ${plural(policies.length, 'policy', 'policies')} active.`;
 }
 

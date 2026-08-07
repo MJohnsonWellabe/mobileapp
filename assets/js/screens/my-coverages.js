@@ -13,6 +13,8 @@ import {
   startOfToday,
   titleCase,
   SERVICE_NUMBER,
+  productEyebrow,
+  paidThroughLabel,
 } from '../format.js';
 import { html, esc, dataRow, button, toast, on, illustration, headlineBand } from '../ui.js';
 import { icons, wellabeMark } from '../icons.js';
@@ -168,6 +170,37 @@ page({
 
 /* ------------------------------------------------------------- views ----- */
 
+/** The band at the top of MyCoverages.
+ *
+ *  When a policy has lapsed, the count is not the headline — the lapse is. An
+ *  earlier version put "0 active · 1 needs your attention" inside the same
+ *  reassuring yellow panel that tells a healthy member "All active and paid up
+ *  to date", which meant April's entirely-lapsed coverage looked, at a glance,
+ *  exactly like Dave's healthy coverage. */
+function coveragesHeadline(policies, statuses, activeCount, needsAttention) {
+  if (needsAttention) {
+    const lapsed = policies.filter((p, i) => statuses[i].key !== 'active');
+    return headlineBand({
+      tone: 'attention',
+      icon: 'alert',
+      headline:
+        needsAttention === 1
+          ? `Your ${PRODUCT_LABELS[lapsed[0].product]} needs your attention`
+          : `${needsAttention} policies need your attention`,
+      caption: activeCount
+        ? `${activeCount} of your ${policies.length} policies ${activeCount === 1 ? 'is' : 'are'} active`
+        : 'No active coverage right now',
+      note: 'Open it below to see what it costs to bring it back to active.',
+    });
+  }
+  return headlineBand({
+    icon: 'checkCircle',
+    figure: String(policies.length),
+    caption: policies.length === 1 ? 'policy with Wellabe' : 'policies with Wellabe',
+    note: 'All active and paid up to date.',
+  });
+}
+
 function listView(policies, user, health, today) {
   const held = new Set(policies.map((p) => p.product));
   const available = Object.keys(PRODUCT_CATALOG).filter((p) => !held.has(p));
@@ -177,15 +210,7 @@ function listView(policies, user, health, today) {
   const needsAttention = statuses.length - activeCount;
 
   return html`
-    ${policies.length
-      ? headlineBand({
-          figure: String(policies.length),
-          caption: policies.length === 1 ? 'policy with Wellabe' : 'policies with Wellabe',
-          note: needsAttention
-            ? `${activeCount} active · ${needsAttention} needs your attention`
-            : 'All active and paid up to date',
-        })
-      : ''}
+    ${policies.length ? coveragesHeadline(policies, statuses, activeCount, needsAttention) : ''}
     ${health?.qualifiesForGuaranteedIssue && !held.has('hospitalIndemnity')
       ? html`<div class="card card--accent stack-sm">
           <h2 class="card__title">You've unlocked a no-health-questions offer</h2>
@@ -237,7 +262,7 @@ function policyCard(policy, today) {
   return html`<div class="card stack-sm">
     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:var(--space-3)">
       <div>
-        <div class="card__meta">${esc(PRODUCT_LABELS[policy.product])}</div>
+        <div class="card__meta">${esc(productEyebrow(policy))}</div>
         <h2 class="card__title">${esc(policy.planName)}</h2>
       </div>
       <span class="pill pill--${status.tone}"
@@ -246,7 +271,7 @@ function policyCard(policy, today) {
     </div>
     <p>${esc(policy.coverageSummary)}</p>
     ${dataRow('Policy number', policy.policyNumber)}
-    ${dataRow('Paid through', formatDate(policy.paidThroughDate))}
+    ${dataRow('Paid through', paidThroughLabel(policy, today))}
     ${status.key !== 'active'
       ? html`<a
           class="btn btn--primary btn--block"
@@ -322,7 +347,7 @@ function detailView(policy, today) {
   const status = coverageStatus(policy, today);
   return html`
     <div class="card stack-sm">
-      <div class="card__meta">${esc(PRODUCT_LABELS[policy.product])}</div>
+      <div class="card__meta">${esc(productEyebrow(policy))}</div>
       <h2>${esc(policy.planName)}</h2>
       <span class="pill pill--${status.tone}"
         >${status.tone === 'success' ? icons.checkCircle() : icons.alert()}${esc(status.label)}</span
@@ -341,7 +366,7 @@ function detailView(policy, today) {
       <h2 class="section-heading">The details</h2>
       ${dataRow('Policy number', policy.policyNumber)}
       ${dataRow('Effective date', formatDate(policy.effectiveDate))}
-      ${dataRow('Paid through', formatDate(policy.paidThroughDate))}
+      ${dataRow('Paid through', paidThroughLabel(policy, today))}
       ${dataRow('Premium', `${formatMoney(policy.premiumAmount)} ${policy.premiumFrequency}`)}
       ${dataRow('Automatic payments', policy.autopayEnabled ? 'On' : 'Off')}
     </div>

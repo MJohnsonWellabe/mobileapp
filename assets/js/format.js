@@ -293,3 +293,28 @@ export function escapeHtml(value) {
 export function titleCase(value) {
   return String(value).charAt(0).toUpperCase() + String(value).slice(1);
 }
+
+/** The product-line eyebrow above a plan name — omitted when the plan name
+ *  already begins with it.
+ *
+ *  Most plan names are "<product line> <variant>": "Medicare Supplement Plan G"
+ *  under an eyebrow reading "Medicare Supplement", "Short-Term Care — 360 Day"
+ *  under "Short-Term Care". Stacked, that reads as a rendering bug rather than
+ *  as a hierarchy (visual QA finding). Where the plan name genuinely differs —
+ *  "Dental Choice Plus" under "Dental" — the eyebrow still earns its place. */
+export function productEyebrow(policy) {
+  const label = PRODUCT_LABELS[policy.product] ?? '';
+  return policy.planName?.startsWith(label) ? '' : label;
+}
+
+/** "Paid through <date>", with the date marked when it is already in the past.
+ *
+ *  A lapsed policy rendered "Paid through June 7, 2026" in exactly the same
+ *  plain ink as a healthy one's "Paid through September 3, 2026". Working out
+ *  which of those means "you are covered" requires the reader to know today's
+ *  date and do the arithmetic — precisely the ambiguity docs/01 principle 2
+ *  rules out (visual QA finding). */
+export function paidThroughLabel(policy, today = startOfToday()) {
+  const expired = parseYmd(policy.paidThroughDate) < today;
+  return `${formatDate(policy.paidThroughDate)}${expired ? ' — expired' : ''}`;
+}

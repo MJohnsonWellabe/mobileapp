@@ -117,29 +117,57 @@ export function sectionCard({ href, icon, title, status, badge, statusPrefix, st
 }
 
 /**
- * A filled brand-yellow band carrying the one number a screen is about.
+ * The band at the top of a section screen, carrying the one thing that screen is
+ * about. Home and MyRewards already opened this way and both reviewers judged
+ * them the strongest screens in the app; Coverages, Payments and Claims opened
+ * onto a white label/value table with no brand colour at all.
  *
- * Home and MyRewards already open on a yellow panel with a headline figure, and
- * both reviewers judged those the strongest screens in the app. MyCoverages,
- * MyPayments and MyClaims opened straight onto a white label/value table with no
- * brand colour anywhere in the first screenful — the app had a branded front
- * door and unbranded rooms behind it. This is the same component, reused, so the
- * three tabs a member actually lives in get the same treatment.
+ * IT HAS TO KNOW WHAT IT IS SAYING. The first version of this didn't, and that
+ * was worse than having no band. One saturated-yellow panel carried both "All
+ * active and paid up to date" and "0 active · 1 needs your attention", so the
+ * loudest element on the screen told a member nothing — April's lapsed coverage
+ * got the same reassuring panel as Dave's healthy one, and it out-shouted the
+ * red alert card below it. Both reviewers called this blocking, independently.
+ * Older members scan colour before they read words; a colour that contradicts
+ * its own label is the exact failure docs/01 principle 2 exists to prevent.
  *
- * Yellow stays a background here, exactly as docs/01 requires: everything drawn
- * on it resolves through --color-on-brand-yellow via `.card--accent-solid`.
+ * So: `tone: 'brand'` is the calm/good state and stays yellow. `tone:
+ * 'attention'` is a genuinely different surface with an alert icon. Yellow is
+ * still only ever a background — everything on it resolves through
+ * --color-on-brand-yellow — and the attention surface themes normally.
  *
- * @param {string} figure   the number itself — kept short, it is set very large
- * @param {string} caption  what the number means, in plain words
- * @param {string} [note]   an optional second line, e.g. a date or a count
+ * NEVER HERO A NUMBER THAT ISN'T THE ANSWER. Pass `headline` instead of `figure`
+ * when there is no number worth enlarging. That exists because the money version
+ * gave Debbie, whose critical-illness claim was denied, a 44px "$0.00" as the
+ * app's answer to how her claim went — presented in the same triumphant panel
+ * that tells Todd he received $486.20.
+ *
+ * @param {string} [figure]   a number, set very large. Use only when a number
+ *        genuinely answers the screen's question.
+ * @param {string} [headline] a short phrase, set smaller than `figure`. Use when
+ *        no number does. Mutually exclusive with `figure`.
+ * @param {string} [caption]  what the figure means, in plain words
+ * @param {string} [note]     a second line — a date, a count, a next step
+ * @param {'brand'|'attention'} [tone]  'attention' when the member has something
+ *        to do. Changes the surface, not just the words.
+ * @param {string} [icon]     an icons.js key, drawn before the caption
+ * @param {string} [action]   optional HTML for a control inside the band, so an
+ *        "amount due" band isn't a dead end at the top of the screen
  */
-export function headlineBand({ figure, caption, note }) {
-  return html`<div class="card card--accent-solid">
+export function headlineBand({ figure, headline, caption, note, tone = 'brand', icon, action }) {
+  const attention = tone === 'attention';
+  return html`<div class="card ${attention ? 'card--attention' : 'card--accent-solid'} headline-band">
     <div class="balance">
-      <span class="balance__number">${esc(figure)}</span>
-      <span class="balance__unit">${esc(caption)}</span>
+      ${figure ? html`<span class="balance__number">${esc(figure)}</span>` : ''}
+      ${headline ? html`<span class="balance__headline">${esc(headline)}</span>` : ''}
+      ${caption
+        ? html`<span class="balance__unit">
+            ${icon ? icons[icon]() : ''}${esc(caption)}
+          </span>`
+        : ''}
     </div>
     ${note ? html`<p class="headline-note">${esc(note)}</p>` : ''}
+    ${action ?? ''}
   </div>`;
 }
 

@@ -746,7 +746,12 @@
   font: inherit;
   font-size: var(--text-sm);
   font-weight: var(--weight-medium);
-  color: var(--color-text-primary);
+  /* Secondary, not primary. Promoting these to full ink fixed the "reads as
+     disabled" complaint but overshot: unselected labels then looked HEAVIER
+     than the selected one, so the active tab read as the recessive one. The
+     track border added above is what actually fixes the disabled look; the
+     labels can stay secondary and let the selected tab win. */
+  color: var(--color-text-secondary);
   cursor: pointer;
 }
 /* The raised pill relies on surface-vs-sunken lightness to read as selected.
@@ -1126,6 +1131,17 @@
 .card--accent-solid .meter__fill {
   background: var(--color-on-brand-yellow);
 }
+/* The streak ring draws in brand yellow everywhere else, which makes it
+   completely invisible on this panel — the ring simply disappeared and left a
+   floating number when MyHealth's streak card moved onto yellow. Same treatment
+   as .meter directly above: the progress indicator becomes ink, the track
+   becomes a translucent dark, and the panel stays the brand surface. */
+.card--accent-solid .ring__value {
+  stroke: var(--color-on-brand-yellow);
+}
+.card--accent-solid .ring__track {
+  stroke: rgba(20, 24, 27, 0.18);
+}
 
 /* Plain text, not a disabled button — a disabled .btn at 45% opacity measured
    well under the 4.5:1 floor, and shaped like a button it invited a tap that
@@ -1295,4 +1311,39 @@
 .headline-note {
   text-align: center;
   margin-top: var(--space-2);
+}
+
+/* The "you have something to do" variant of headlineBand(). A genuinely
+   different surface, not yellow with different words: the whole point is that a
+   member scanning colour before reading gets the right answer. Unlike the yellow
+   variant this needs no token pinning — it themes normally, because warning-tint
+   and text-primary both flip together. */
+.card--attention {
+  background: var(--color-warning-tint);
+  border: 2px solid var(--color-warning);
+  color: var(--color-text-primary);
+}
+.card--attention .balance__unit,
+.card--attention .headline-note {
+  color: var(--color-text-primary);
+}
+
+/* A phrase where a figure would go. Smaller than .balance__number, because a
+   sentence set at 44px stops being readable and starts being shouted. */
+.balance__headline {
+  display: block;
+  font-size: var(--text-xl);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-heading);
+}
+/* The caption carries a status icon in both tones, so the band never signals by
+   colour alone (docs/01 principle 2). */
+.balance__unit svg {
+  width: 20px;
+  height: 20px;
+  vertical-align: -4px;
+  margin-right: var(--space-1);
+}
+.headline-band .btn {
+  margin-top: var(--space-3);
 }

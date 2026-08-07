@@ -37,7 +37,8 @@ import {
   PRODUCT_LABELS,
   startOfToday,
   round2,
-  PERIOD_MONTHS,
+  productEyebrow,
+  paidThroughLabel,
 } from '../format.js';
 import { html, esc, dataRow, button, toast, on, parseAmount, illustration, headlineBand } from '../ui.js';
 import { icons } from '../icons.js';
@@ -141,40 +142,52 @@ page({
 
 /* ------------------------------------------------------------- views ----- */
 
-/** The one number this screen is about, in the brand band.
+/** The band at the top of MyPayments.
  *
- *  Which number that is depends on the member's state, and getting that wrong
- *  would be worse than having no band at all. If anything is behind, the figure
- *  is what they owe right now — the thing they opened MyPayments to deal with.
- *  If everything is current, it's what they pay each month, which is the
- *  question a member with nothing outstanding is actually asking.
+ *  There is exactly one number a member acts on here, and it is never an
+ *  average. The first version of this heroed "a month, on average" at 44px for
+ *  paid-up members — a derived statistic, meaningless for Dave who holds one
+ *  policy, and rendered in the same large type and the same panel as April's
+ *  genuinely-owed $174.00. Both reviewers flagged it: a big dollar figure a
+ *  member can't tie to a transaction invites "wait, what is that?" from the
+ *  floor, and at worst reads as a balance they didn't know they had.
  *
- *  Non-monthly premiums are normalised to a monthly equivalent so quarterly and
- *  annual policies can be added to monthly ones; the note says "on average" so
- *  the figure is never read as a bill that is about to arrive. */
+ *  So it's the next actual charge and its date when everything is current, and
+ *  what is owed right now when it isn't — with the pay button inside the band in
+ *  that case, since an "amount due" that offers no way to pay it is a dead end
+ *  at the top of the most revenue-relevant screen in the app. */
 function paymentsHeadline(policies, today) {
   const behind = policies.filter((p) => coverageStatus(p, today).key !== 'active');
 
   if (behind.length) {
     const owed = behind.reduce((sum, p) => sum + amountDue(p, today).amount, 0);
     return headlineBand({
+      tone: 'attention',
+      icon: 'alert',
       figure: formatMoney(round2(owed)),
       caption: behind.length === 1 ? 'due now on 1 policy' : `due now across ${behind.length} policies`,
-      note: 'Paying this brings your coverage back to active.',
+      note:
+        behind.length === 1
+          ? `Paying this brings your ${PRODUCT_LABELS[behind[0].product]} coverage back to active.`
+          : 'Paying this brings your coverage back to active.',
+      action:
+        behind.length === 1
+          ? html`<button class="btn btn--primary btn--block" data-pay="${esc(behind[0].id)}">
+              Pay ${formatMoney(round2(owed))} now
+            </button>`
+          : '',
     });
   }
 
-  const monthly = policies.reduce(
-    (sum, p) => sum + p.premiumAmount / PERIOD_MONTHS[p.premiumFrequency],
-    0,
-  );
-  const next = policies
-    .map((p) => p.paidThroughDate)
-    .sort()[0];
+  // The soonest-expiring policy is the one whose premium comes up next.
+  const next = [...policies].sort((a, b) =>
+    a.paidThroughDate < b.paidThroughDate ? -1 : 1,
+  )[0];
   return headlineBand({
-    figure: formatMoney(round2(monthly)),
-    caption: 'a month, on average',
-    note: `Everything is paid up. Your next premium is due ${formatDate(next)}.`,
+    icon: 'checkCircle',
+    figure: formatMoney(next.premiumAmount),
+    caption: 'your next premium',
+    note: `Nothing is due now. This is due ${formatDate(next.paidThroughDate)}.`,
   });
 }
 
@@ -188,14 +201,14 @@ function listView(policies, user, payments, today) {
           return html`<div class="card stack-sm">
             <div style="display:flex;justify-content:space-between;gap:var(--space-3);align-items:flex-start">
               <div>
-                <div class="card__meta">${esc(PRODUCT_LABELS[policy.product])}</div>
+                <div class="card__meta">${esc(productEyebrow(policy))}</div>
                 <h2 class="card__title">${esc(policy.planName)}</h2>
               </div>
               <span class="pill pill--${status.tone}"
                 >${status.tone === 'success' ? icons.checkCircle() : icons.alert()}${esc(status.label)}</span
               >
             </div>
-            ${dataRow('Paid through', formatDate(policy.paidThroughDate))}
+            ${dataRow('Paid through', paidThroughLabel(policy, today))}
             ${dataRow(
               'Premium',
               `${formatMoney(policy.premiumAmount)} ${policy.premiumFrequency}`,
@@ -279,9 +292,9 @@ function payForm(policy, user, ctx, today) {
 
   return html`
     <div class="card stack-sm">
-      <div class="card__meta">${esc(PRODUCT_LABELS[policy.product])}</div>
+      <div class="card__meta">${esc(productEyebrow(policy))}</div>
       <h2 class="card__title">${esc(policy.planName)}</h2>
-      ${dataRow('Paid through', formatDate(policy.paidThroughDate))}
+      ${dataRow('Paid through', paidThroughLabel(policy, today))}
     </div>
 
     <form class="card stack" data-payment="${esc(policy.id)}">

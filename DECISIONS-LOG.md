@@ -1310,3 +1310,64 @@ the pill shape simply disappeared.
   share of the row. Now "Your claim is under review", with the number in the body. Changed
   in both `notices.js` and `seed-mailbox.js`, since a seeded notice and a live one for the
   same event must not be written in two different voices.
+
+### The band had to know what it was saying
+
+The yellow headline band shipped in the previous commit and both reviewers came back FAIL
+on it — separately, from different marks, naming the same defect. It was worse than having
+no band, and the reason is worth writing down because it's a design mistake, not a bug.
+
+One saturated-yellow panel carried both "All active and paid up to date" and "0 active ·
+1 needs your attention". Same fill, same type, same layout; the only differentiator was one
+line of small text. So the loudest element on every screen was the one element that told a
+member nothing — and on April, whose coverage is entirely lapsed, a reassuring yellow panel
+sat *above* and visually out-shouted the red alert card telling her to pay. Older members
+scan colour before they read words. A colour that contradicts its own label is precisely
+the failure docs/01 principle 2 exists to prevent, and I'd introduced it while trying to
+satisfy a brand-presence finding.
+
+Two specific screens were the proof:
+
+- **Debbie**, whose critical-illness claim was denied, got a 44px **"$0.00 / paid to you so
+  far"** in the same triumphant panel that tells Todd he received $486.20. One reviewer
+  called it the most quotable screenshot in the set, and they were right — it reads as the
+  app rubbing it in.
+- **Dave and Matt** got "a month, on average" heroed at 44px on MyPayments. A derived
+  statistic, literally meaningless for Dave who holds one policy, rendered identically to
+  April's genuinely-owed $174.00. A big dollar figure a member can't tie to a transaction
+  invites exactly the wrong question from the floor.
+
+`headlineBand()` now takes a `tone`, and two rules came out of this:
+
+1. **`tone: 'attention'` is a different surface, not yellow with different words** — warning
+   tint, a real border, and an alert icon in the caption, so the band never signals by
+   colour alone. Yellow stays the calm/good state and stays a background only.
+2. **Never hero a number that isn't the answer.** `headline` (a phrase, set smaller) exists
+   for when no number is worth enlarging. Debbie's band now leads with "Your claim wasn't
+   approved" and the appeal path. MyPayments leads with the next actual charge and its date
+   when everything is current, and with what's owed — plus the pay button *inside the band*
+   — when it isn't. An "amount due" that offers no way to pay it is a dead end at the top of
+   the most consequential screen in the app.
+
+Home's hero got the same correction from the other direction: it now returns nothing rather
+than claim "One of your policies needs attention" in reassuring yellow. The alert card
+directly beneath it already says that, in the right colour. A greeting is not a status.
+
+Also landed with this: the streak card on MyHealth moved onto the yellow panel (it was the
+one obvious hero-number screen still opening on plain white, which made the pattern read as
+unfinished rather than as a system) — and immediately proved the yellow-on-yellow trap
+again, since the ring draws in brand yellow and vanished. Fixed the same way `.meter`
+already handles that panel: the indicator becomes ink, the track becomes a translucent dark.
+That's the fifth instance this session of "a component moved onto a pinned surface without
+re-pinning what its subtree resolves." It is the single most repeated mistake in this
+codebase and the comment on `.card--accent-solid` now says so.
+
+Smaller corrections in the same pass: `productEyebrow()` drops the product-line eyebrow when
+the plan name already starts with it ("Medicare Supplement" stacked above "Medicare
+Supplement Plan G" read as a rendering bug); `paidThroughLabel()` appends "— expired" to a
+past date, since telling apart "Paid through June 7" from "Paid through September 3"
+otherwise required the reader to know today's date and do the arithmetic; the denied claim's
+stage bar regained the "Step 4 of 4" prefix every other card carries, so paid and denied no
+longer differ by hue alone; and the segmented control's unselected labels went back to
+secondary ink, because promoting them to full ink fixed "looks disabled" but overshot into
+making the *inactive* tabs look heavier than the active one.

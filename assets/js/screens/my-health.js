@@ -120,7 +120,14 @@ function streakCard(stats, profile) {
   const circumference = 2 * Math.PI * 46;
   const pct = Math.min(1, stats.currentStreakDays / Math.max(7, stats.longestStreakDays || 7));
 
-  return html`<div class="card stack-sm" style="text-align:center">
+  /* Filled brand yellow, like MyRewards' points balance and the bands now at the
+     top of Coverages, Payments and Claims. The streak is the most obviously
+     "hero number" content in the app and it was the one screen still opening on
+     a plain white card, which made the pattern read as unfinished rather than as
+     a system (visual QA finding). Yellow is still only a background — the ring
+     is a shape, and every word on the panel resolves through
+     --color-on-brand-yellow via .card--accent-solid. */
+  return html`<div class="card card--accent-solid stack-sm" style="text-align:center">
     <div class="ring ring--lg" style="margin:0 auto">
       <svg viewBox="0 0 108 108" aria-hidden="true">
         <circle class="ring__track" cx="54" cy="54" r="46" />
